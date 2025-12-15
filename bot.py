@@ -1,8 +1,17 @@
+import os
 import telebot
 from telebot import types
 
-bot = telebot.TeleBot("8504700222:AAHdZSwvPUtc-bLQGSd_uLOEahBvPy4-edo")
+# Читаємо токен з Environment Variable
+TOKEN = os.getenv("MY_BOT_TOKEN")
 
+# Перевірка токена (тільки для дебагу, можна прибрати після запуску)
+if TOKEN is None:
+    raise ValueError("Токен не знайдено! Переконайся, що змінна середовища MY_BOT_TOKEN встановлена.")
+
+bot = telebot.TeleBot(TOKEN)
+
+# Стартове повідомлення з кнопками
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -21,6 +30,7 @@ def start(message):
         reply_markup=markup
     )
 
+# Обробка натискань кнопок
 @bot.message_handler()
 def handler(message):
     if message.text == "Асортимент":
@@ -34,6 +44,7 @@ def handler(message):
     else:
         bot.send_message(message.chat.id, "Не розумію. Обери кнопку.")
 
+# Запуск бота
 bot.infinity_polling()
 
 
