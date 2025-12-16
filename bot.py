@@ -1,111 +1,286 @@
 import os
 from flask import Flask, request
 import telebot
-import time
+from telebot import types
 
-# Ініціалізація Flask app
-app = Flask(__name__)
-
-# Токен бота з Environment Variable
-TOKEN = os.getenv("MY_BOT_TOKEN")
-if TOKEN is None:
-    raise ValueError("Токен не знайдено! Встанови MY_BOT_TOKEN у Render.")
-
-# Ініціалізація бота
-bot = telebot.TeleBot(TOKEN)
-
-# Імпортуємо меню
+# Імпорт меню з keyboards.py
 from keyboards import (
     main_menu,
     assortment_menu,
-    liquid_menu,
+    liquids_menu,
     pods_menu,
-    components_menu,
-    cartridges_menu
+    cartridges_menu,
+    delivery_menu,
+    order_menu,
+    info_menu
 )
 
-# Обробник команди /start
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_message(
-        message.chat.id,
-        "Привіт! Обери категорію 👇",
-        reply_markup=main_menu()
-    )
+app = Flask(__name__)
 
-# Обробник текстових повідомлень
-@bot.message_handler(func=lambda message: True)
-def handle_all_messages(message):
-    text = message.text.strip()
+# ==================== НАЛАШТУВАННЯ ====================
+TOKEN = os.getenv("MY_BOT_TOKEN")
+if not TOKEN:
+    raise ValueError("❌ Токен не знайдено! Встанови MY_BOT_TOKEN у Render.")
+
+bot = telebot.TeleBot(TOKEN)
+
+# ID групи для адміністраторів (ЗАМІНИТИ на свій!)
+ADMIN_GROUP_ID = -1003654920245
+
+# ==================== ТЕКСТИ ПОВІДОМЛЕНЬ ====================
+WELCOME_TEXT = """
+👋 *Вітаємо в нашому боті!*
+
+Обирайте необхідний розділ:
+
+🛍️ *Асортимент* - переглянути товари
+🚚 *Доставка* - інформація про доставку
+📦 *Замовлення* - створити замовлення
+ℹ️ *Детальніше* - інформація про бота
+
+Оберіть пункт меню 👇
+"""
+
+DELIVERY_TEXT = """
+🚚 *Інформація про доставку*
+
+📍 *Способи доставки:*
+• Нова пошта
+• Укрпошта
+• Самовивіз (м. Київ)
+
+⏰ *Терміни доставки:*
+• По Києву: 1-2 дні
+• По Україні: 2-5 днів
+
+💰 *Вартість доставки:*
+• Від 50 грн (залежить від перевізника)
+• Безкоштовно при замовленні від 1000 грн
+
+📞 *Контакти для зв'язку:*
+• Телефон: +380XXXXXXXXX
+• Telegram: @ваш_контакт
+
+Все зрозуміло? 👇
+"""
+
+ORDER_TEXT = """
+📦 *Оформлення замовлення*
+
+Напишіть, що вас цікавить:
+• Назва товару
+• Кількість
+• Ваші контакти
+• Бажаний спосіб доставки
+
+*Приклад повідомлення:*
+"Chaser 30 ml for pods - 2 шт, Vaporesso XROS 3 - 1 шт, доставка Нова Пошта, телефон 0991234567"
+
+Наш менеджер зв'яжеться з вами протягом 5-15 хвилин для уточнення деталей.
+
+*Просто напишіть своє повідомлення нижче:*
+"""
+
+INFO_TEXT = """
+ℹ️ *Інформація про бота*
+
+🤖 *Як користуватися ботом:*
+1. Оберіть 🛍️ Асортимент для перегляду товарів
+2. Обирайте категорії та товари
+3. Для замовлення натисніть 📦 Замовлення
+4. Напишіть що вас цікавить
+5. Очікуйте дзвінка від менеджера
+
+💳 *Способи оплати:*
+• На карту
+• Оплата при отриманні
+• Google Pay / Apple Pay
+
+🔄 *Повернення/обмін:*
+• Впродовж 14 днів
+• Товар має бути в оригінальній упаковці
+
+❓ *Часті питання:*
+Q: Чи є доставка в моє місто?
+A: Так, доставляємо по всій Україні
+
+Q: Як довго триває доставка?
+A: 1-5 днів залежно від місця проживання
+
+Q: Чи є гарантія?
+A: Так, гарантія від виробника
+
+📞 *Контакти для зв'язку:*
+@ваш_support
++380XXXXXXXXX
+"""
+
+# ==================== ОБРОБНИКИ КОМАНД ====================
+@bot.message_handler(commands=['start', 'help', 'menu'])
+def send_welcome(message):
+    """Обробка команд /start, /help, /menu"""
+    bot.send_message(message.chat.id, WELCOME_TEXT, 
+                    parse_mode='Markdown', reply_markup=main_menu())
+
+# ==================== ОБРОБНИКИ ГОЛОВНОГО МЕНЮ ====================
+@bot.message_handler(func=lambda m: m.text in ["🛍️ Асортимент", "🚚 Доставка", 
+                                              "📦 Замовлення", "ℹ️ Детальніше"])
+def handle_main_menu(message):
+    """Обробка головного меню"""
+    text = message.text
     chat_id = message.chat.id
+    
+    if text == "🛍️ Асортимент":
+        bot.send_message(chat_id, "Оберіть категорію товарів:", 
+                        reply_markup=assortment_menu())
+    
+    elif text == "🚚 Доставка":
+        bot.send_message(chat_id, DELIVERY_TEXT, 
+                        parse_mode='Markdown', reply_markup=delivery_menu())
+    
+    elif text == "📦 Замовлення":
+        bot.send_message(chat_id, ORDER_TEXT, 
+                        parse_mode='Markdown', reply_markup=order_menu())
+        bot.register_next_step_handler(message, process_order)
+    
+    elif text == "ℹ️ Детальніше":
+        bot.send_message(chat_id, INFO_TEXT, parse_mode='Markdown')
+        bot.send_message(chat_id, "Оберіть пункт для детальнішої інформації:", 
+                        reply_markup=info_menu())
 
-    if text == "Асортимент":
-        bot.send_message(chat_id, "Обери категорію:", reply_markup=assortment_menu())
+# ==================== ОБРОБНИКИ АСОРТИМЕНТУ ====================
+@bot.message_handler(func=lambda m: m.text in ["💧 Рідини", "🔋 Под-системи", 
+                                              "🎯 Картриджі"])
+def handle_assortment(message):
+    """Обробка меню асортименту"""
+    text = message.text
+    chat_id = message.chat.id
     
-    elif text == "Рідина":
-        bot.send_message(chat_id, "Обери рідину:", reply_markup=liquid_menu())
+    if text == "💧 Рідини":
+        bot.send_message(chat_id, "Оберіть рідину:", reply_markup=liquids_menu())
     
-    elif text == "Chaser 10 ml":
-        bot.send_message(chat_id, "Список наявності Chaser 10 ml:\n\n1. Chaser 10ml - Salt 20mg\n2. Chaser 10ml - Freebase 6mg\n3. Chaser 10ml - Salt 10mg")
+    elif text == "🔋 Под-системи":
+        bot.send_message(chat_id, "Оберіть под-систему:", reply_markup=pods_menu())
     
-    elif text == "Chaser 30 ml for pods":
-        bot.send_message(chat_id, "Список Chaser 30 ml for pods:\n\n1. Манго-Льодяна малина\n2. Ананас-Кокос\n3. Полуниця-Кавун")
+    elif text == "🎯 Картриджі":
+        bot.send_message(chat_id, "Оберіть картриджі:", reply_markup=cartridges_menu())
+
+# ==================== ОБРОБНИКИ ТОВАРІВ ====================
+@bot.message_handler(func=lambda m: any(keyword in m.text for keyword in 
+                                       ["Chaser", "Xlim", "Vaporesso", "Картриджі", "Інші"]))
+def handle_products(message):
+    """Обробка вибору товарів"""
+    text = message.text
+    chat_id = message.chat.id
     
-    elif text == "Chaser mix 30 ml":
-        bot.send_message(chat_id, "Список Chaser mix 30 ml:\n\n1. Berry Mix\n2. Tropical Mix\n3. Ice Mix")
-    
-    elif text == "Chaser black 30 ml":
-        bot.send_message(chat_id, "Список Chaser black 30 ml:\n\n1. Black Ice\n2. Black Mint\n3. Black Berry")
-    
-    elif text == "Chaser lux 30 ml":
-        bot.send_message(chat_id, "Список Chaser lux 30 ml:\n\n1. Lux Mango\n2. Lux Strawberry\n3. Lux Grape")
-    
-    elif text == "Chaser black 30 ml 50 mg":
-        bot.send_message(chat_id, "Список Chaser black 30 ml 50 mg:\n\n1. Black 50mg - Ice\n2. Black 50mg - Berry\n3. Black 50mg - Tobacco")
-    
-    elif text == "Поди":
-        bot.send_message(chat_id, "Обери под:", reply_markup=pods_menu())
-    
-    elif text == "Xlim":
-        bot.send_message(chat_id, "Поди Xlim:\n\n1. Xlim Pro\n2. Xlim SQ\n3. Xlim C")
-    
-    elif text == "Vaporesso":
-        bot.send_message(chat_id, "Поди Vaporesso:\n\n1. XROS 3\n2. XROS 3 Mini\n3. XROS 4")
-    
-    elif text == "Компоненти до пода":
-        bot.send_message(chat_id, "Обери компонент:", reply_markup=components_menu())
-    
-    elif text == "Картриджі":
-        bot.send_message(chat_id, "Обери бренд:", reply_markup=cartridges_menu())
-    
-    elif text == "Картриджі Xlim":
-        bot.send_message(chat_id, "Список картриджів Xlim:\n\n1. Xlim 0.6Ω Pod\n2. Xlim 0.8Ω Pod\n3. Xlim 1.2Ω Pod")
-    
-    elif text == "Картриджі Vaporesso":
-        bot.send_message(chat_id, "Список картриджів Vaporesso:\n\n1. XROS 0.6Ω Pod\n2. XROS 0.8Ω Pod\n3. XROS 1.0Ω Pod")
-    
-    elif text == "Назад":
-        bot.send_message(chat_id, "Головне меню:", reply_markup=main_menu())
-    
+    if text == "Інші бренди":
+        response = "Інші бренди под-систем:\n\n• SMOK\n• GeekVape\n• Voopoo\n• OXVA\n• Uwell"
+        bot.send_message(chat_id, response)
     else:
-        bot.send_message(chat_id, "Обери кнопку з меню 👇", reply_markup=main_menu())
+        product_info = f"""
+🏷️ *{text}*
 
-# Flask роут для вебхука
-@app.route('/' + TOKEN, methods=['POST'])
-def get_message():
-    json_string = request.get_data().decode('utf-8')
-    update = telebot.types.Update.de_json(json_string)
-    bot.process_new_updates([update])
-    return "!", 200
+💰 Ціна: від 299 грн
+📦 Наявність: ✅ В наявності
+⭐ Рейтинг: 4.8/5
 
-@app.route("/")
-def webhook():
+*Опис:*
+Висока якість, приємний смак, довготривала робота.
+
+Для замовлення натисніть 📦 Замовлення у головному меню.
+"""
+        bot.send_message(chat_id, product_info, parse_mode='Markdown')
+
+# ==================== ОБРОБНИК НАЗАД ====================
+@bot.message_handler(func=lambda m: m.text in ["Назад ◀️", "Так, зрозуміло ✅", 
+                                              "Скасувати замовлення ❌"])
+def handle_back(message):
+    """Обробка кнопок Назад та скасування"""
+    text = message.text
+    chat_id = message.chat.id
+    
+    if text == "Скасувати замовлення ❌":
+        bot.send_message(chat_id, "✅ Замовлення скасовано.")
+    
+    bot.send_message(chat_id, "Повертаємось у головне меню:", reply_markup=main_menu())
+
+# ==================== ОБРОБКА ЗАМОВЛЕНЬ ====================
+def process_order(message):
+    """Обробка тексту замовлення від користувача"""
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+    user_name = message.from_user.first_name
+    username = f"@{message.from_user.username}" if message.from_user.username else "немає"
+    order_text = message.text
+    
+    # Якщо користувач скасував
+    if order_text == "Скасувати замовлення ❌":
+        bot.send_message(chat_id, "✅ Замовлення скасовано.", reply_markup=main_menu())
+        return
+    
+    # Повідомлення користувачу
+    user_response = f"""
+✅ *Ваше замовлення прийнято!*
+
+Ми отримали ваше повідомлення:
+"{order_text}"
+
+Наш менеджер зв'яжеться з вами протягом 5-15 хвилин.
+
+Дякуємо за замовлення! 🙏
+"""
+    bot.send_message(chat_id, user_response, parse_mode='Markdown', reply_markup=main_menu())
+    
+    # Повідомлення в адмін-групу
+    admin_message = f"""
+📦 *НОВЕ ЗАМОВЛЕННЯ* 📦
+
+👤 *Користувач:* {user_name}
+📱 *Username:* {username}
+🆔 *ID:* {user_id}
+
+📝 *Повідомлення:*
+{order_text}
+
+⏰ *Час:* {message.date}
+💬 *Відповісти:* [Написати](tg://user?id={user_id})
+"""
+    
+    try:
+        bot.send_message(ADMIN_GROUP_ID, admin_message, parse_mode='Markdown')
+        print(f"✅ Замовлення відправлено в групу: {user_name}")
+    except Exception as e:
+        print(f"❌ Помилка відправки в групу: {e}")
+        # Можна зберегти в файл або базу даних
+        with open("orders.log", "a", encoding="utf-8") as f:
+            f.write(f"{user_id}|{user_name}|{order_text}|{message.date}\n")
+
+# ==================== ВЕБХУК ТА FLASK ====================
+@app.route('/')
+def index():
+    return "🤖 Бот працює! Перейдіть у Telegram: @ваш_бот"
+
+@app.route('/set_webhook')
+def set_webhook():
+    """Встановлення вебхука"""
+    webhook_url = f"https://telegram-bot-iss2.onrender.com/{TOKEN}"
     bot.remove_webhook()
-    # Замініть на ваш реальний URL
-    bot.set_webhook(url=f"https://telegram-bot-iss2.onrender.com/{TOKEN}")
-    return "Webhook set!", 200
+    bot.set_webhook(url=webhook_url)
+    return f"✅ Вебхук встановлено: {webhook_url}"
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    """Обробка вебхука від Telegram"""
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return 'OK'
+    return 'ERROR', 400
 
-    app.run(host="0.0.0.0", port=port)
+# ==================== ЗАПУСК ====================
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    print(f"🚀 Бот запускається на порті {port}...")
+    print(f"🔗 Вебхук: https://telegram-bot-iss2.onrender.com/{TOKEN}")
+    app.run(host='0.0.0.0', port=port)
