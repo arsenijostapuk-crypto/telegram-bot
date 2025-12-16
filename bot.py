@@ -101,10 +101,11 @@ def get_message():
 @app.route("/")
 def webhook():
     bot.remove_webhook()
-    # Встановіть свій реальний URL Render тут
-    bot.set_webhook(url=f"https://your-app-name.onrender.com/{TOKEN}")
+    # Замініть на ваш реальний URL
+    bot.set_webhook(url=f"https://telegram-bot-iss2.onrender.com/{TOKEN}")
     return "Webhook set!", 200
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
+
     app.run(host="0.0.0.0", port=port)
