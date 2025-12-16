@@ -87,8 +87,9 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # Render підставляє свій порт
     # Встановлюємо webhook на твій Render домен
     bot.remove_webhook()
-    bot.set_webhook(url=f"https://api.render.com/deploy/srv-d503jt7pm1nc73c3oq2g?key=ZAjorDuWwL4{TOKEN}")  L
+    bot.set_webhook(url=f"https://api.render.com/deploy/srv-d503jt7pm1nc73c3oq2g?key=ZAjorDuWwL4{TOKEN}")  
     app.run(host="0.0.0.0", port=port)
+
 
 
 
