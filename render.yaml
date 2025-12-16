@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: telegram-bot
+    env: python
+    region: frankfurt  # або інший регіон ближче до вас
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: |
+      python bot.py
+    envVars:
+      - key: MY_BOT_TOKEN
+        value: 8504700222:AAHf3WUtUm8PBDySkfDC9Uf2OUhIY52w6kg  # або sync: false для ручного введення
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
