@@ -1,61 +1,76 @@
 from telebot import types
 
-# Головне меню
+# ==================== ГОЛОВНЕ МЕНЮ ====================
 def main_menu():
+    """Головне меню з 4 основними кнопками"""
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton("Асортимент")
-    btn2 = types.KeyboardButton("Рідина")
-    btn3 = types.KeyboardButton("Поди")
-    btn4 = types.KeyboardButton("Компоненти до пода")
-    btn5 = types.KeyboardButton("Картриджі")
-    markup.add(btn1, btn2, btn3, btn4, btn5)
+    buttons = ["🛍️ Асортимент", "🚚 Доставка", "📦 Замовлення", "ℹ️ Детальніше"]
+    for btn in buttons:
+        markup.add(types.KeyboardButton(btn))
     return markup
 
-# Меню асортименту
+# ==================== МЕНЮ АСОРТИМЕНТУ ====================
 def assortment_menu():
+    """Меню категорій товарів"""
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    # Додайте сюди свої категорії асортименту
-    btn1 = types.KeyboardButton("Категорія 1")
-    btn2 = types.KeyboardButton("Назад")
-    markup.add(btn1, btn2)
+    buttons = ["💧 Рідини", "🔋 Под-системи", "🎯 Картриджі", "Назад ◀️"]
+    for btn in buttons:
+        markup.add(types.KeyboardButton(btn))
     return markup
 
-# Меню рідин
-def liquid_menu():
+# ==================== МЕНЮ РІДИН ====================
+def liquids_menu():
+    """Меню рідин з усіма варіантами Chaser"""
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton("Chaser 10 ml")
-    btn2 = types.KeyboardButton("Chaser 30 ml for pods")
-    btn3 = types.KeyboardButton("Chaser mix 30 ml")
-    btn4 = types.KeyboardButton("Chaser black 30 ml")
-    btn5 = types.KeyboardButton("Chaser lux 30 ml")
-    btn6 = types.KeyboardButton("Chaser black 30 ml 50 mg")
-    btn7 = types.KeyboardButton("Назад")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7)
+    liquids = [
+        "Chaser 10 ml", "Chaser 30 ml for pods", 
+        "Chaser mix 30 ml", "Chaser black 30 ml",
+        "Chaser lux 30 ml", "Chaser black 30 ml 50 mg", 
+        "Назад ◀️"
+    ]
+    for liquid in liquids:
+        markup.add(types.KeyboardButton(liquid))
     return markup
 
-# Меню подів
+# ==================== МЕНЮ ПОД-СИСТЕМ ====================
 def pods_menu():
+    """Меню под-систем"""
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton("Xlim")
-    btn2 = types.KeyboardButton("Vaporesso")
-    btn3 = types.KeyboardButton("Назад")
-    markup.add(btn1, btn2, btn3)
+    pods = ["Xlim", "Vaporesso", "Інші бренди", "Назад ◀️"]
+    for pod in pods:
+        markup.add(types.KeyboardButton(pod))
     return markup
 
-# Меню компонентів
-def components_menu():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    # Додайте свої компоненти
-    btn1 = types.KeyboardButton("Батарея")
-    btn2 = types.KeyboardButton("Назад")
-    markup.add(btn1, btn2)
-    return markup
-
-# Меню картриджів
+# ==================== МЕНЮ КАРТРИДЖІВ ====================
 def cartridges_menu():
+    """Меню картриджів"""
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn1 = types.KeyboardButton("Картриджі Xlim")
-    btn2 = types.KeyboardButton("Картриджі Vaporesso")
-    btn3 = types.KeyboardButton("Назад")
-    markup.add(btn1, btn2, btn3)
+    cartridges = ["Картриджі Xlim", "Картриджі Vaporesso", "Назад ◀️"]
+    for cartridge in cartridges:
+        markup.add(types.KeyboardButton(cartridge))
+    return markup
+
+# ==================== МЕНЮ ДОСТАВКИ ====================
+def delivery_menu():
+    """Меню після інформації про доставку"""
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("Так, зрозуміло ✅"))
+    markup.add(types.KeyboardButton("Назад ◀️"))
+    return markup
+
+# ==================== МЕНЮ ЗАМОВЛЕННЯ ====================
+def order_menu():
+    """Меню під час оформлення замовлення"""
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("Скасувати замовлення ❌"))
+    return markup
+
+# ==================== ІНФОРМАЦІЙНЕ МЕНЮ ====================
+def info_menu():
+    """Меню для інформаційного розділу"""
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("Як замовити?"))
+    markup.add(types.KeyboardButton("Оплата та доставка"))
+    markup.add(types.KeyboardButton("Гарантія"))
+    markup.add(types.KeyboardButton("Назад ◀️"))
     return markup
