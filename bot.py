@@ -203,6 +203,7 @@ def handle_back(message):
         bot.send_message(chat_id, "✅ Замовлення скасовано.")
     
     bot.send_message(chat_id, "Повертаємось у головне меню:", reply_markup=main_menu())
+    return  # ← Додайте цей рядок!
 
 # ==================== ОБРОБКА ЗАМОВЛЕНЬ ====================
 def process_order(message):
@@ -284,3 +285,4 @@ if __name__ == '__main__':
     print(f"🚀 Бот запускається на порті {port}...")
     print(f"🔗 Вебхук: https://telegram-bot-iss2.onrender.com/{TOKEN}")
     app.run(host='0.0.0.0', port=port)
+
