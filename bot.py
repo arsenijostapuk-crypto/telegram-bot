@@ -210,6 +210,9 @@ def process_order(message):
     """Обробка тексту замовлення від користувача"""
     chat_id = message.chat.id
     user_id = message.from_user.id
+    # Очищаємо стан користувача
+    if user_id in user_states:
+        del user_states[user_id]
     user_name = message.from_user.first_name
     username = f"@{message.from_user.username}" if message.from_user.username else "немає"
     order_text = message.text
@@ -285,4 +288,5 @@ if __name__ == '__main__':
     print(f"🚀 Бот запускається на порті {port}...")
     print(f"🔗 Вебхук: https://telegram-bot-iss2.onrender.com/{TOKEN}")
     app.run(host='0.0.0.0', port=port)
+
 
