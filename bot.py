@@ -140,9 +140,10 @@ def handle_main_menu(message):
                         parse_mode='Markdown', reply_markup=delivery_menu())
     
     elif text == "📦 Замовлення":
-        bot.send_message(chat_id, ORDER_TEXT, 
-                        parse_mode='Markdown', reply_markup=order_menu())
-        bot.register_next_step_handler(message, process_order)
+    bot.send_message(chat_id, ORDER_TEXT, 
+                    parse_mode='Markdown', reply_markup=order_menu())
+    # Зберігаємо стан користувача
+    user_states[message.from_user.id] = "waiting_for_order"
     
     elif text == "ℹ️ Детальніше":
         bot.send_message(chat_id, INFO_TEXT, parse_mode='Markdown')
@@ -289,6 +290,7 @@ if __name__ == '__main__':
     print(f"🚀 Бот запускається на порті {port}...")
     print(f"🔗 Вебхук: https://telegram-bot-iss2.onrender.com/{TOKEN}")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
