@@ -5,10 +5,11 @@ from telebot import types
 
 # Імпорти
 from keyboards import (
-    main_menu, admin_main_menu, order_menu,
-    liquids_menu, pods_menu, info_menu
+    main_menu, assortment_menu, liquids_menu, pods_menu,
+    cartridges_menu, delivery_menu, order_menu, info_menu,
+    admin_main_menu
 )
-from config import ADMIN_IDS, is_admin
+from config import ADMIN_IDS, ADMIN_GROUP_ID, is_admin
 from chat_manager import chat_manager
 
 app = Flask(__name__)
@@ -23,126 +24,282 @@ bot = telebot.TeleBot(TOKEN)
 # Для відповідей адміна
 admin_reply_mode = {}
 
-# ==================== КЛІЄНТИ ====================
-@bot.message_handler(commands=['start'])
-def start(message):
-    user = message.from_user
-    chat_id = message.chat.id
-    
-    chat = chat_manager.start_chat(user.id, user.first_name, user.username)
-    
-    welcome_text = """
-👋 *Вітаємо в підтримці!*
+# Тексти повідомлень
+WELCOME_TEXT = """
+👋 *Вітаємо в нашому боті!*
 
-Оберіть дію:
-💬 Написати менеджеру
-📦 Зробити замовлення
-ℹ️ Інформація
+Обирайте необхідний розділ:
+
+🛍️ *Асортимент* - переглянути товари
+🚚 *Доставка* - інформація про доставку
+📦 *Замовлення* - створити замовлення
+ℹ️ *Детальніше* - інформація про бота
+
+Оберіть пункт меню 👇
 """
-    bot.send_message(chat_id, welcome_text, parse_mode='Markdown', reply_markup=main_menu())
-    
-    notify_admins(f"🆕 Клієнт {user.first_name} (@{user.username}) запустив бота")
 
-@bot.message_handler(func=lambda m: m.text == "💬 Написати менеджеру")
-def write_to_manager(message):
-    bot.send_message(message.chat.id, "✍️ *Напишіть ваше повідомлення:*", parse_mode='Markdown')
-    bot.register_next_step_handler(message, save_client_message)
+DELIVERY_TEXT = """
+🚚 *Інформація про доставку*
 
-def save_client_message(message):
-    user = message.from_user
+📍 *Способи доставки:*
+• Нова пошта
+• Укрпошта
+• Самовивіз (м. Київ)
+
+⏰ *Терміни доставки:*
+• По Києву: 1-2 дні
+• По Україні: 2-5 днів
+
+💰 *Вартість доставки:*
+• Від 50 грн (залежить від перевізника)
+• Безкоштовно при замовленні від 1000 грн
+
+📞 *Контакти для зв'язку:*
+• Телефон: +380XXXXXXXXX
+• Telegram: @ваш_контакт
+
+Все зрозуміло? 👇
+"""
+
+ORDER_TEXT = """
+📦 *Оформлення замовлення*
+
+Напишіть, що вас цікавить:
+• Назва товару
+• Кількість
+• Ваші контакти
+• Бажаний спосіб доставки
+
+*Приклад повідомлення:*
+"Chaser 30 ml for pods - 2 шт, Vaporesso XROS 3 - 1 шт, доставка Нова Пошта, телефон 0991234567"
+
+Наш менеджер зв'яжеться з вами протягом 5-15 хвилин.
+
+*Просто напишіть своє повідомлення нижче:*
+"""
+
+INFO_TEXT = """
+ℹ️ *Інформація про бота*
+
+🤖 *Як користуватися ботом:*
+1. Оберіть 🛍️ Асортимент для перегляду товарів
+2. Обирайте категорії та товари
+3. Для замовлення натисніть 📦 Замовлення
+4. Напишіть що вас цікавить
+5. Очікуйте дзвінка від менеджера
+
+💳 *Способи оплати:*
+• На карту
+• Оплата при отриманні
+• Google Pay / Apple Pay
+
+🔄 *Повернення/обмін:*
+• Впродовж 14 днів
+• Товар має бути в оригінальній упаковці
+"""
+
+# ==================== КЛІЄНТИ: ГОЛОВНЕ МЕНЮ ====================
+@bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+    bot.send_message(message.chat.id, WELCOME_TEXT, 
+                    parse_mode='Markdown', reply_markup=main_menu())
+
+@bot.message_handler(func=lambda m: m.text in ["🛍️ Асортимент", "🚚 Доставка", 
+                                              "📦 Замовлення", "ℹ️ Детальніше"])
+def handle_main_menu(message):
+    text = message.text
     chat_id = message.chat.id
     
-    chat_manager.add_message(user.id, message.text, from_admin=False)
-    bot.send_message(chat_id, "✅ Надіслано менеджеру!", reply_markup=main_menu())
+    if text == "🛍️ Асортимент":
+        bot.send_message(chat_id, "Оберіть категорію товарів:", 
+                        reply_markup=assortment_menu())
     
-    # Сповістити адмінів
-    for admin_id in ADMIN_IDS:
-        try:
-            markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton(
-                "💬 Відповісти", 
-                callback_data=f"reply_{user.id}"
-            ))
-            
-            text = f"👤 *Нове повідомлення від {user.first_name}*\n"
-            text += f"🆔: `{user.id}`\n\n"
-            text += f"💬 {message.text}"
-            
-            bot.send_message(admin_id, text, parse_mode='Markdown', reply_markup=markup)
-        except:
-            pass
+    elif text == "🚚 Доставка":
+        bot.send_message(chat_id, DELIVERY_TEXT, 
+                        parse_mode='Markdown', reply_markup=delivery_menu())
+    
+    elif text == "📦 Замовлення":
+        bot.send_message(chat_id, ORDER_TEXT, 
+                        parse_mode='Markdown', reply_markup=order_menu())
+        bot.register_next_step_handler(message, process_order)
+    
+    elif text == "ℹ️ Детальніше":
+        bot.send_message(chat_id, INFO_TEXT, parse_mode='Markdown')
+        bot.send_message(chat_id, "Оберіть пункт для детальнішої інформації:",
+                        reply_markup=info_menu())
 
-@bot.message_handler(func=lambda m: m.text == "📦 Зробити замовлення")
-def make_order(message):
-    bot.send_message(message.chat.id, "Оберіть категорію:", reply_markup=order_menu())
-
-@bot.message_handler(func=lambda m: m.text == "ℹ️ Інформація")
-def show_info(message):
-    bot.send_message(message.chat.id, "Оберіть розділ:", reply_markup=info_menu())
-
-@bot.message_handler(func=lambda m: m.text in ["💧 Рідини", "🔋 Поди", "🎯 Картриджі"])
-def handle_categories(message):
+# ==================== КЛІЄНТИ: АСОРТИМЕНТ ====================
+@bot.message_handler(func=lambda m: m.text in ["💧 Рідини", "🔋 Под-системи", 
+                                              "🎯 Картриджі"])
+def handle_assortment(message):
     text = message.text
     chat_id = message.chat.id
     
     if text == "💧 Рідини":
         bot.send_message(chat_id, "Оберіть рідину:", reply_markup=liquids_menu())
-    elif text == "🔋 Поди":
-        bot.send_message(chat_id, "Оберіть под:", reply_markup=pods_menu())
+    
+    elif text == "🔋 Под-системи":
+        bot.send_message(chat_id, "Оберіть под-систему:", reply_markup=pods_menu())
+    
     elif text == "🎯 Картриджі":
-        bot.send_message(chat_id, "🎯 *Картриджі:*\n\n• Xlim\n• Vaporesso\n• Інші", parse_mode='Markdown')
+        bot.send_message(chat_id, "Оберіть картриджі:", reply_markup=cartridges_menu())
 
-@bot.message_handler(func=lambda m: m.text in ["Chaser 10 ml", "Chaser 30 ml"])
-def handle_liquids(message):
-    response = f"""
-🏷️ *{message.text}*
-💰 250 грн
-📦 ✅ В наявності
-⭐ 4.8/5
-💬 Напишіть менеджеру для замовлення
-"""
-    bot.send_message(message.chat.id, response, parse_mode='Markdown')
-
-@bot.message_handler(func=lambda m: m.text in ["Xlim", "Vaporesso"])
-def handle_pods(message):
-    response = f"""
-🔋 *{message.text}*
-💰 від 1200 грн
-📦 ✅ В наявності
-⭐ 4.9/5
-💬 Напишіть менеджеру для замовлення
-"""
-    bot.send_message(message.chat.id, response, parse_mode='Markdown')
-
-@bot.message_handler(func=lambda m: m.text in ["🚚 Доставка", "💳 Оплата", "🛡️ Гарантія"])
-def handle_info(message):
+# ==================== КЛІЄНТИ: ТОВАРИ ====================
+@bot.message_handler(func=lambda m: any(keyword in m.text for keyword in 
+                                       ["Chaser", "Xlim", "Vaporesso", "Картриджі", "Інші"]))
+def handle_products(message):
     text = message.text
     chat_id = message.chat.id
     
-    if text == "🚚 Доставка":
-        response = "🚚 *Доставка:*\n• Нова пошта (1-3 дні)\n• Укрпошта (2-5 днів)\n• Самовивіз (Київ)\n• Від 50 грн"
-    elif text == "💳 Оплата":
-        response = "💳 *Оплата:*\n• Карта\n• При отриманні\n• Google/Apple Pay"
+    if text == "Інші бренди":
+        response = "Інші бренди под-систем:\n\n• SMOK\n• GeekVape\n• Voopoo\n• OXVA\n• Uwell"
+        bot.send_message(chat_id, response)
     else:
-        response = "🛡️ *Гарантія:*\n• 14 днів\n• Оригінальна упаковка\n• Обмін/повернення"
+        product_info = f"""
+🏷️ *{text}*
+
+💰 Ціна: від 299 грн
+📦 Наявність: ✅ В наявності
+⭐ Рейтинг: 4.8/5
+
+*Опис:*
+Висока якість, приємний смак, довготривала робота.
+
+Для замовлення натисніть 📦 Замовлення у головному меню.
+"""
+        bot.send_message(chat_id, product_info, parse_mode='Markdown')
+
+# ==================== КЛІЄНТИ: ІНФОРМАЦІЯ ====================
+@bot.message_handler(func=lambda m: m.text in ["Як замовити?", "Оплата та доставка",
+                                              "Гарантія"])
+def handle_info_menu(message):
+    text = message.text
+    chat_id = message.chat.id
+    
+    if text == "Як замовити?":
+        response = """
+📝 *Як зробити замовлення:*
+        
+1. Натисніть 🛍️ Асортимент
+2. Оберіть товари
+3. Натисніть 📦 Замовлення
+4. Напишіть що вас цікавить
+5. Очікуйте дзвінка менеджера
+        
+Це просто! 😊
+        """
+    
+    elif text == "Оплата та доставка":
+        response = """
+💳 *Оплата та доставка:*
+        
+💸 *Способи оплати:*
+• Передплата на карту
+• Оплата при отриманні
+• Google Pay / Apple Pay
+        
+🚚 *Доставка:*
+• Нова пошта (1-3 дні)
+• Укрпошта (2-5 днів)
+• Самовивіз (Київ)
+        
+💰 *Вартість:*
+• Від 50 грн
+• Безкоштовно від 1000 грн
+        """
+    
+    else:  # "Гарантія"
+        response = """
+🛡️ *Гарантія та повернення:*
+        
+✅ *Гарантія:*
+• На всі товари - 14 днів
+• Офіційна гарантія виробника
+        
+🔄 *Повернення:*
+• Впродовж 14 днів
+• Товар має бути в оригінальній упаковці
+• Збережена цілісність упаковки
+        """
     
     bot.send_message(chat_id, response, parse_mode='Markdown')
+    bot.send_message(chat_id, "Ще питання?", reply_markup=info_menu())
 
-@bot.message_handler(func=lambda m: m.text == "⬅️ Назад")
-def go_back(message):
-    bot.send_message(message.chat.id, "Головне меню:", reply_markup=main_menu())
+# ==================== КЛІЄНТИ: НАЗАД ====================
+@bot.message_handler(func=lambda m: m.text in ["Назад ◀️", "Так, зрозуміло ✅", 
+                                              "Скасувати замовлення ❌"])
+def handle_back(message):
+    text = message.text
+    chat_id = message.chat.id
+    
+    if text == "Скасувати замовлення ❌":
+        bot.send_message(chat_id, "✅ Замовлення скасовано.", reply_markup=main_menu())
+    else:
+        bot.send_message(chat_id, "Головне меню:", reply_markup=main_menu())
+
+# ==================== КЛІЄНТИ: ЗАМОВЛЕННЯ ====================
+def process_order(message):
+    chat_id = message.chat.id
+    user = message.from_user
+    order_text = message.text
+    
+    if order_text == "Скасувати замовлення ❌":
+        bot.send_message(chat_id, "✅ Замовлення скасовано.", reply_markup=main_menu())
+        return
+    
+    # Зберігаємо замовлення
+    chat_manager.start_chat(user.id, user.first_name, user.username)
+    chat_manager.add_message(user.id, order_text, from_admin=False)
+    
+    # Повідомлення клієнту
+    bot.send_message(
+        chat_id,
+        f"✅ *Замовлення прийнято!*\n\nВаше повідомлення:\n{order_text}\n\nМенеджер зв'яжеться протягом 5-15 хвилин.",
+        parse_mode='Markdown',
+        reply_markup=main_menu()
+    )
+    
+    # Повідомлення в групу
+    send_to_admin_group(user, order_text)
+    
+    # Повідомлення адмінам для чату
+    notify_admins_about_order(user, order_text)
+
+def send_to_admin_group(user, order_text):
+    """Відправляє замовлення в групу"""
+    try:
+        admin_msg = f"""
+📦 *НОВЕ ЗАМОВЛЕННЯ*
+
+👤 {user.first_name} (@{user.username if user.username else 'без username'})
+🆔 {user.id}
+
+📝 {order_text}
+
+💬 Відповісти: tg://user?id={user.id}"""
+        
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton(
+            "💬 Відповісти клієнту", 
+            callback_data=f"reply_{user.id}"
+        ))
+        
+        bot.send_message(ADMIN_GROUP_ID, admin_msg, parse_mode='Markdown', reply_markup=markup)
+    except Exception as e:
+        print(f"❌ Помилка відправки в групу: {e}")
 
 # ==================== АДМІНИ ====================
 @bot.message_handler(commands=['admin'])
 def admin_panel(message):
     if not is_admin(message.from_user.id):
+        bot.reply_to(message, "⛔ Доступ заборонено")
         return
     
     bot.send_message(message.chat.id, "👑 *Адмін-панель*", 
                     parse_mode='Markdown', reply_markup=admin_main_menu())
 
 @bot.message_handler(func=lambda m: m.text == "📋 Активні чати")
-def show_chats(message):
+def show_active_chats(message):
     if not is_admin(message.from_user.id):
         return
     
@@ -152,21 +309,72 @@ def show_chats(message):
         bot.send_message(message.chat.id, "📭 Немає активних чатів")
         return
     
-    text = "📋 *Активні чати:*\n\n"
+    text = "📋 *Активні чати/замовлення:*\n\n"
     for user_id, chat in active_chats.items():
-        text += f"👤 {chat['user_name']} (@{chat['username']})\n"
+        text += f"👤 {chat['user_name']}\n"
         text += f"🆔: `{user_id}`\n"
         text += f"💬 Повідомлень: {len(chat['messages'])}\n"
+        if chat.get('unread'):
+            text += "🔴 *НЕПРОЧИТАНЕ*\n"
         text += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
     
     markup = types.InlineKeyboardMarkup()
     for user_id in active_chats.keys():
         markup.add(types.InlineKeyboardButton(
-            f"💬 Чат {user_id[:6]}...", 
+            f"💬 Чат з {user_id[:6]}...", 
             callback_data=f"open_{user_id}"
         ))
     
     bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup)
+
+@bot.message_handler(func=lambda m: m.text == "🆕 Нові повідомлення")
+def show_unread_chats(message):
+    if not is_admin(message.from_user.id):
+        return
+    
+    unread_chats = chat_manager.get_unread_chats()
+    
+    if not unread_chats:
+        bot.send_message(message.chat.id, "✅ Немає нових повідомлень")
+        return
+    
+    text = "🆕 *Непрочитані повідомлення:*\n\n"
+    for user_id, chat in unread_chats.items():
+        text += f"👤 {chat['user_name']}\n"
+        text += f"🆔: `{user_id}`\n"
+        if chat['messages']:
+            last_msg = chat['messages'][-1]['text'][:50]
+            text += f"💬 {last_msg}...\n"
+        text += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+    
+    markup = types.InlineKeyboardMarkup()
+    for user_id in unread_chats.keys():
+        markup.add(types.InlineKeyboardButton(
+            f"📨 Відповісти {user_id[:6]}...", 
+            callback_data=f"reply_{user_id}"
+        ))
+    
+    bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup)
+
+@bot.message_handler(func=lambda m: m.text == "💬 Відповісти клієнту")
+def select_client_to_reply(message):
+    if not is_admin(message.from_user.id):
+        return
+    
+    active_chats = chat_manager.get_active_chats()
+    
+    if not active_chats:
+        bot.send_message(message.chat.id, "📭 Немає активних чатів")
+        return
+    
+    markup = types.InlineKeyboardMarkup()
+    for user_id, chat in active_chats.items():
+        markup.add(types.InlineKeyboardButton(
+            f"💬 {chat['user_name']} ({user_id[:6]})", 
+            callback_data=f"reply_{user_id}"
+        ))
+    
+    bot.send_message(message.chat.id, "Оберіть клієнта для відповіді:", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('open_'))
 def open_chat(call):
@@ -178,11 +386,16 @@ def open_chat(call):
         bot.answer_callback_query(call.id, "Чат не знайдено")
         return
     
+    # Позначаємо як прочитаний
+    chat['unread'] = False
+    chat_manager.save_chats()
+    
+    # Показуємо історію
     history = f"💬 *Чат з {chat['user_name']}*\n"
     history += f"👤 @{chat['username']}\n"
     history += f"🆔 `{user_id}`\n\n"
     
-    for msg in chat['messages'][-5:]:
+    for msg in chat['messages'][-10:]:
         sender = "👨‍💼 Ви" if msg['from_admin'] else "👤 Клієнт"
         history += f"{sender}: {msg['text']}\n"
         history += f"⏰ {msg['time'][11:16]}\n\n"
@@ -190,7 +403,7 @@ def open_chat(call):
     markup = types.InlineKeyboardMarkup()
     markup.add(
         types.InlineKeyboardButton("✏️ Відповісти", callback_data=f"reply_{user_id}"),
-        types.InlineKeyboardButton("❌ Закрити", callback_data=f"close_{user_id}")
+        types.InlineKeyboardButton("✅ Завершити", callback_data=f"close_{user_id}")
     )
     
     bot.send_message(admin_id, history, parse_mode='Markdown', reply_markup=markup)
@@ -203,16 +416,16 @@ def start_reply(call):
     
     admin_reply_mode[admin_id] = user_id
     
-    bot.send_message(admin_id, f"✏️ *Відповідь клієнту {user_id}*\n\nНапишіть повідомлення:")
+    bot.send_message(admin_id, f"✏️ *Відповідь клієнту {user_id}*\n\nНапишіть ваше повідомлення:")
     bot.answer_callback_query(call.id)
 
-# Обробка повідомлень адміна
+# Обробка повідомлень адміна для клієнтів
 @bot.message_handler(func=lambda m: m.from_user.id in admin_reply_mode)
 def send_reply_to_client(message):
     admin_id = message.from_user.id
     user_id = admin_reply_mode.get(admin_id)
     
-    if not user_id:
+    if not user_id or message.text.startswith('/'):
         return
     
     try:
@@ -227,7 +440,7 @@ def send_reply_to_client(message):
         chat_manager.add_message(user_id, message.text, from_admin=True)
         
         # Підтвердження адміну
-        bot.send_message(admin_id, "✅ Надіслано клієнту")
+        bot.send_message(admin_id, f"✅ Відповідь надіслана клієнту {user_id}")
         
         # Виходимо з режиму відповіді
         del admin_reply_mode[admin_id]
@@ -235,15 +448,47 @@ def send_reply_to_client(message):
     except Exception as e:
         bot.send_message(admin_id, f"❌ Помилка: {e}")
 
-# Допоміжні функції
-def notify_admins(text):
+@bot.message_handler(func=lambda m: m.text == "📊 Статистика")
+def show_stats(message):
+    if not is_admin(message.from_user.id):
+        return
+    
+    active_chats = chat_manager.get_active_chats()
+    total_chats = len(chat_manager.chats)
+    
+    text = f"📊 *Статистика:*\n\n"
+    text += f"• Активних чатів: {len(active_chats)}\n"
+    text += f"• Всього клієнтів: {total_chats}\n"
+    text += f"• Адмінів онлайн: {len(ADMIN_IDS)}\n"
+    
+    bot.send_message(message.chat.id, text, parse_mode='Markdown')
+
+@bot.message_handler(func=lambda m: m.text == "🔙 Головне меню")
+def back_to_main(message):
+    bot.send_message(message.chat.id, "Головне меню:", reply_markup=main_menu())
+
+# Допоміжна функція
+def notify_admins_about_order(user, order_text):
+    """Сповістити адмінів про нове замовлення"""
     for admin_id in ADMIN_IDS:
         try:
-            bot.send_message(admin_id, text, parse_mode='Markdown')
+            text = f"🆕 *Нове замовлення!*\n\n"
+            text += f"👤 {user.first_name}\n"
+            text += f"📱 @{user.username if user.username else 'немає'}\n"
+            text += f"🆔 `{user.id}`\n\n"
+            text += f"💬 {order_text[:100]}..."
+            
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton(
+                "💬 Відповісти", 
+                callback_data=f"reply_{user.id}"
+            ))
+            
+            bot.send_message(admin_id, text, parse_mode='Markdown', reply_markup=markup)
         except:
             pass
 
-# Вебхук
+# ==================== ВЕБХУК ====================
 @app.route('/')
 def index():
     return "🤖 Бот працює!"

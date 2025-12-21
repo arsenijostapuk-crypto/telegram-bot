@@ -25,7 +25,6 @@ class ChatManager:
                 "started": str(datetime.now()),
                 "messages": [],
                 "status": "active",
-                "admin_assigned": None,
                 "unread": True
             }
         else:
@@ -52,5 +51,9 @@ class ChatManager:
     def get_active_chats(self):
         return {uid: chat for uid, chat in self.chats.items() 
                 if chat.get("status") == "active"}
+    
+    def get_unread_chats(self):
+        return {uid: chat for uid, chat in self.chats.items() 
+                if chat.get("unread") == True}
 
 chat_manager = ChatManager()
