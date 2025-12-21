@@ -9,7 +9,8 @@ from keyboards import (
     cartridges_menu, delivery_menu, order_menu, info_menu,
     admin_main_menu
 )
-from config import ADMIN_IDS, ADMIN_GROUP_ID, is_admin
+ffrom config import ADMIN_IDS, is_admin
+ADMIN_GROUP_ID = -1003654920245
 from chat_manager import chat_manager
 
 app = Flask(__name__)
@@ -510,4 +511,5 @@ def webhook():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
+
     app.run(host='0.0.0.0', port=port)
