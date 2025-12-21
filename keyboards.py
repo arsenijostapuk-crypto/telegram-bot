@@ -3,7 +3,7 @@ from telebot import types
 # ==================== ГОЛОВНЕ МЕНЮ ====================
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    buttons = ["🛍️ Асортимент", "🚚 Доставка", "📦 Замовлення", "ℹ️ Детальніше"]
+    buttons = ["🛍️ Асортимент", "📦 Замовлення", "ℹ️ Детальніше"]
     for btn in buttons:
         markup.add(types.KeyboardButton(btn))
     return markup
@@ -77,4 +77,5 @@ def admin_main_menu():
         types.KeyboardButton("📊 Статистика"),
         types.KeyboardButton("🔙 Головне меню")
     )
+
     return markup
