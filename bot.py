@@ -2,7 +2,7 @@ import os
 from flask import Flask, request
 import telebot
 from telebot import types
-
+from products import get_product_response
 # Імпорти
 from keyboards import (
     main_menu, assortment_menu, liquids_menu, pods_menu,
@@ -454,6 +454,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
