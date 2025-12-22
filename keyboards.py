@@ -55,7 +55,7 @@ def delivery_menu():
 # ==================== МЕНЮ ЗАМОВЛЕННЯ ====================
 def order_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(types.KeyboardButton("Скасувати замовлення ❌"))
+    markup.add(types.KeyboardButton("Скасувати надсилання ❌"))
     return markup
 
 # ==================== ІНФОРМАЦІЙНЕ МЕНЮ ====================
@@ -78,6 +78,7 @@ def admin_main_menu():
     )
 
     return markup
+
 
 
 
