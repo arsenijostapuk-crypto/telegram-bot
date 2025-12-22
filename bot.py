@@ -117,6 +117,7 @@ def handle_products(message):
     else:
         product_info = f"""
 🏷️ *{text}*
+Ваперресо
 
 💰 Ціна: від 299 грн
 📦 Наявність: ✅ В наявності
@@ -458,5 +459,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
