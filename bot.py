@@ -105,25 +105,28 @@ def handle_assortment(message):
         bot.send_message(chat_id, "Оберіть картриджі:", reply_markup=cartridges_menu())
 
 # ==================== КЛІЄНТИ: ТОВАРИ ====================
-@bot.message_handler(func=lambda m: any(keyword in m.text for keyword in 
-                                       ["Chaser", "Xlim", "Vaporesso", "Картриджі", "Інші"]))
+@bot.message_handler(func=lambda m: m.text in [
+    "Chaser 10 ml", "Chaser 30 ml for pods", "Chaser mix 30 ml",
+    "Chaser black 30 ml", "Chaser lux 30 ml", "Chaser black 30 ml 50 mg",
+    "Xlim", "Vaporesso", "Інші бренди",
+    "Картриджі Xlim", "Картриджі Vaporesso"
+])
 def handle_products(message):
+    """Обробка вибору товарів (проста версія)"""
     text = message.text
     chat_id = message.chat.id
     
-    if text == "Інші бренди":
-        response = "Інші бренди под-систем:\n\n• SMOK\n• GeekVape\n• Voopoo\n• OXVA\n• Uwell"
-        bot.send_message(chat_id, response)
-    else:
-        product_info = f"""
-🏷️ *{text}*
-Поди хлім цінняться тим що вони дуже довго служать
-*Опис:*
-Висока якість, приємний смак, довготривала робота.
-
-Для замовлення натисніть 📦 Замовлення у головному меню.
-"""
-        bot.send_message(chat_id, product_info, parse_mode='Markdown')
+    # Отримуємо текст з products.py
+    response = get_product_response(text)
+    
+    # Додаємо кнопку замовлення
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton(
+        "📦 Замовити цей товар", 
+        callback_data=f"order_{text.replace(' ', '_')}"
+    ))
+    
+    bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=markup)
 
 # ==================== КЛІЄНТИ: ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text in ["Як замовити?", "Оплата та доставка",
@@ -454,6 +457,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
