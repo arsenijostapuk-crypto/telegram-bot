@@ -2,6 +2,7 @@ import os
 from flask import Flask, request
 import telebot
 from telebot import types
+from telebot.apihelper import ApiTelegramException
 from products import get_product_response
 # Імпорти
 from keyboards import (
@@ -354,10 +355,27 @@ def open_chat(call):
     bot.send_message(admin_id, history, parse_mode='Markdown', reply_markup=markup)
     bot.answer_callback_query(call.id)
 
-    @bot.callback_query_handler(func=lambda call: call.data.startswith('reply_'))
+@bot.callback_query_handler(func=lambda call: call.data.startswith('reply_'))
 def start_reply(call):
+    admin_id = call.from_user.id
+    user_id = call.data.split('_')[1]
     
-    @bot.callback_query_handler(func=lambda call: call.data.startswith('close_'))
+    admin_reply_mode[admin_id] = user_id
+    
+    # Створюємо клавіатуру з кнопкою скасування
+    cancel_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    cancel_markup.add(types.KeyboardButton("/cancel"))
+    
+    bot.send_message(
+        admin_id, 
+        f"✏️ *Відповідь клієнту {user_id}*\n\nНапишіть ваше повідомлення:\n(або /cancel для скасування)",
+        parse_mode='Markdown',
+        reply_markup=cancel_markup
+    )
+    bot.answer_callback_query(call.id)
+
+# ОБРОБНИК ДЛЯ КНОПКИ "ЗАВЕРШИТИ" - ЦЕ ГОЛОВНЕ ЩО ПОТРІБНО!
+@bot.callback_query_handler(func=lambda call: call.data.startswith('close_'))
 def close_chat(call):
     admin_id = call.from_user.id
     user_id = call.data.split('_')[1]
@@ -387,6 +405,23 @@ def close_chat(call):
         pass
     
     bot.answer_callback_query(call.id, "Чат завершено")
+
+# Обробник для скасування режиму відповіді
+@bot.message_handler(commands=['cancel'])
+def cancel_reply_mode(message):
+    if message.from_user.id in admin_reply_mode:
+        user_id = admin_reply_mode[message.from_user.id]
+        del admin_reply_mode[message.from_user.id]
+        # Прибираємо спеціальну клавіатуру
+        remove_markup = types.ReplyKeyboardRemove()
+        bot.send_message(
+            message.chat.id, 
+            f"❌ Режим відповіді клієнту {user_id} скасовано.",
+            reply_markup=remove_markup
+        )
+    else:
+        bot.send_message(message.chat.id, "ℹ️ Ви не в режимі відповіді.")
+
 # Обробка повідомлень адміна для клієнтів
 @bot.message_handler(func=lambda m: m.from_user.id in admin_reply_mode)
 def send_reply_to_client(message):
@@ -398,8 +433,10 @@ def send_reply_to_client(message):
     
     # Якщо адмін відправляє команду /cancel - скасувати режим
     if message.text.strip() == '/cancel':
-        del admin_reply_mode[admin_id]
-        bot.send_message(admin_id, "❌ Режим відповіді скасовано.")
+        if admin_id in admin_reply_mode:
+            del admin_reply_mode[admin_id]
+            remove_markup = types.ReplyKeyboardRemove()
+            bot.send_message(admin_id, "❌ Режим відповіді скасовано.", reply_markup=remove_markup)
         return
     
     try:
@@ -416,11 +453,17 @@ def send_reply_to_client(message):
         # Підтвердження адміну
         bot.send_message(admin_id, f"✅ Відповідь надіслана клієнту {user_id}")
         
-        # Виходимо з режиму відповіді
-        del admin_reply_mode[admin_id]
+        # Прибираємо спеціальну клавіатуру
+        remove_markup = types.ReplyKeyboardRemove()
+        bot.send_message(admin_id, "✅ Режим відповіді завершено.", reply_markup=remove_markup)
         
-    except telebot.apihelper.ApiTelegramException as e:
-        if "bot was blocked" in str(e).lower() or "chat not found" in str(e).lower():
+        # Виходимо з режиму відповіді
+        if admin_id in admin_reply_mode:
+            del admin_reply_mode[admin_id]
+        
+    except ApiTelegramException as e:
+        error_msg = str(e).lower()
+        if "bot was blocked" in error_msg or "chat not found" in error_msg:
             bot.send_message(admin_id, f"❌ Не вдалося надіслати. Клієнт заблокував бота або чат недоступний.")
             # Позначаємо чат як недоступний
             chat = chat_manager.chats.get(str(user_id))
@@ -430,12 +473,8 @@ def send_reply_to_client(message):
         else:
             bot.send_message(admin_id, f"❌ Помилка: {e}")
         # Не видаляємо admin_reply_mode, щоб адмін міг спробувати ще раз
-        # Або ж видаляємо за бажанням:
-        # del admin_reply_mode[admin_id]
-        
     except Exception as e:
         bot.send_message(admin_id, f"❌ Невідома помилка: {e}")
-        # Не видаляємо admin_reply_mode при невідомій помилці
 
 @bot.message_handler(func=lambda m: m.text == "📊 Статистика")
 def show_stats(message):
@@ -501,16 +540,3 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
-
-
-
-
-
-
-
-
-
-
-
-
-
