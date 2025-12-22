@@ -185,8 +185,8 @@ def process_order(message):
     user = message.from_user
     order_text = message.text
     
-    if order_text == "Скасувати замовлення ❌":
-        bot.send_message(chat_id, "✅ Замовлення скасовано.", reply_markup=main_menu())
+    if order_text == "Скасувати надсилання ❌":
+        bot.send_message(chat_id, "✅ Надсилання скасовано.", reply_markup=main_menu())
         return
     
     # Зберігаємо замовлення
@@ -196,7 +196,7 @@ def process_order(message):
     # Повідомлення клієнту
     bot.send_message(
         chat_id,
-        f"✅ *Замовлення прийнято!*\n\nВаше повідомлення:\n{order_text}\n\nМенеджер зв'яжеться протягом 5-15 хвилин.",
+        f"✅ *Повідомлення повідомлення відправлене!*\n\nВаше повідомлення:\n{order_text}\n\nМенеджер зв'яжеться протягом 5-15 хвилин.",
         parse_mode='Markdown',
         reply_markup=main_menu()
     )
@@ -211,7 +211,7 @@ def send_to_admin_group(user, order_text):
     """Відправляє замовлення в групу"""
     try:
         admin_msg = f"""
-📦 *НОВЕ ЗАМОВЛЕННЯ*
+📦 *НОВЕ ПОВІДОМЛЕННЯ*
 
 👤 {user.first_name} (@{user.username if user.username else 'без username'})
 🆔 {user.id}
@@ -454,6 +454,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
