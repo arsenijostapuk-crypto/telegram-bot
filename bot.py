@@ -354,16 +354,39 @@ def open_chat(call):
     bot.send_message(admin_id, history, parse_mode='Markdown', reply_markup=markup)
     bot.answer_callback_query(call.id)
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('reply_'))
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('reply_'))
 def start_reply(call):
+    
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('close_'))
+def close_chat(call):
     admin_id = call.from_user.id
     user_id = call.data.split('_')[1]
     
-    admin_reply_mode[admin_id] = user_id
+    chat = chat_manager.chats.get(user_id)
+    if not chat:
+        bot.answer_callback_query(call.id, "Чат не знайдено")
+        return
     
-    bot.send_message(admin_id, f"✏️ *Відповідь клієнту {user_id}*\n\nНапишіть ваше повідомлення:")
-    bot.answer_callback_query(call.id)
-
+    # Змінюємо статус чату на "завершений"
+    chat['status'] = 'closed'
+    chat['unread'] = False
+    chat_manager.save_chats()
+    
+    # Повідомлення адміну
+    bot.send_message(admin_id, f"✅ Чат з {chat['user_name']} (ID: {user_id}) завершено.")
+    
+    # Оновлюємо повідомлення з кнопками (прибираємо їх)
+    try:
+        bot.edit_message_text(
+            chat_id=admin_id,
+            message_id=call.message.message_id,
+            text=f"✅ *Чат завершено*\n\nКлієнт: {chat['user_name']}\nID: `{user_id}`",
+            parse_mode='Markdown'
+        )
+    except:
+        pass
+    
+    bot.answer_callback_query(call.id, "Чат завершено")
 # Обробка повідомлень адміна для клієнтів
 @bot.message_handler(func=lambda m: m.from_user.id in admin_reply_mode)
 def send_reply_to_client(message):
@@ -478,6 +501,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
