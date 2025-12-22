@@ -63,7 +63,6 @@ def info_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(types.KeyboardButton("Як замовити?"))
     markup.add(types.KeyboardButton("Оплата та доставка"))
-    markup.add(types.KeyboardButton("Гарантія"))
     markup.add(types.KeyboardButton("Назад ◀️"))
     return markup
 
@@ -79,6 +78,7 @@ def admin_main_menu():
     )
 
     return markup
+
 
 
 
