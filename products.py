@@ -218,7 +218,7 @@ def get_cartridge_response(product_name):
 • **QUICK CHANGE** - система швидкої заміни
 • **LIQUID CONTROL** - контроль заправки
                    """
-        elif product_name == "Картриджі NeXlim":
+    elif product_name == "Картриджі NeXlim":
         return """
 🎯 *Картриджі NeXlim ULTRA*
 
