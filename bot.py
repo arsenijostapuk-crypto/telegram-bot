@@ -373,6 +373,12 @@ def send_reply_to_client(message):
     if not user_id or message.text.startswith('/'):
         return
     
+    # Якщо адмін відправляє команду /cancel - скасувати режим
+    if message.text.strip() == '/cancel':
+        del admin_reply_mode[admin_id]
+        bot.send_message(admin_id, "❌ Режим відповіді скасовано.")
+        return
+    
     try:
         # Відправляємо клієнту
         bot.send_message(
@@ -390,8 +396,23 @@ def send_reply_to_client(message):
         # Виходимо з режиму відповіді
         del admin_reply_mode[admin_id]
         
+    except telebot.apihelper.ApiTelegramException as e:
+        if "bot was blocked" in str(e).lower() or "chat not found" in str(e).lower():
+            bot.send_message(admin_id, f"❌ Не вдалося надіслати. Клієнт заблокував бота або чат недоступний.")
+            # Позначаємо чат як недоступний
+            chat = chat_manager.chats.get(str(user_id))
+            if chat:
+                chat['status'] = 'blocked'
+                chat_manager.save_chats()
+        else:
+            bot.send_message(admin_id, f"❌ Помилка: {e}")
+        # Не видаляємо admin_reply_mode, щоб адмін міг спробувати ще раз
+        # Або ж видаляємо за бажанням:
+        # del admin_reply_mode[admin_id]
+        
     except Exception as e:
-        bot.send_message(admin_id, f"❌ Помилка: {e}")
+        bot.send_message(admin_id, f"❌ Невідома помилка: {e}")
+        # Не видаляємо admin_reply_mode при невідомій помилці
 
 @bot.message_handler(func=lambda m: m.text == "📊 Статистика")
 def show_stats(message):
@@ -457,6 +478,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
