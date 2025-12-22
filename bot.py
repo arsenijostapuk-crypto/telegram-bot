@@ -170,7 +170,7 @@ def handle_back(message):
     text = message.text
     chat_id = message.chat.id
     
-    if text == "Скасувати замовлення ❌":
+    if text == "Скасувати надсилання ❌":
         bot.send_message(chat_id, "✅ Замовлення скасовано.", reply_markup=main_menu())
     else:
         bot.send_message(chat_id, "Головне меню:", reply_markup=main_menu())
@@ -450,6 +450,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
