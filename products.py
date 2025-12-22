@@ -239,7 +239,7 @@ def get_cartridge_response(product_name):
 • **QUICK FLOOD** - миттєве просочування
 • **SMART COIL** - запобігає сухому затягу
 """
-
+    return None 
 # ==================== ІНШІ БРЕНДИ ====================
 def get_other_brands_response():
     """Повертає текст для інших брендів"""
