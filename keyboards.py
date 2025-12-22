@@ -40,7 +40,7 @@ def pods_menu():
 # ==================== МЕНЮ КАРТРИДЖІВ ====================
 def cartridges_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    cartridges = ["Картриджі Xlim", "Картриджі Vaporesso", "Інші Каритриджі", "Назад ◀️"]
+    cartridges = ["Картриджі Xlim", "Картриджі Vaporesso", "Картриджі NeXlim", "Картриджі Lost vape", "Назад ◀️"]
     for cartridge in cartridges:
         markup.add(types.KeyboardButton(cartridge))
     return markup
@@ -79,4 +79,5 @@ def admin_main_menu():
     )
 
     return markup
+
 
