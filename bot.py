@@ -106,20 +106,27 @@ def handle_assortment(message):
 
 # ==================== КЛІЄНТИ: ТОВАРИ ====================
 @bot.message_handler(func=lambda m: m.text in [
+    # Рідини
     "Chaser 10 ml", "Chaser 30 ml for pods", "Chaser mix 30 ml",
     "Chaser black 30 ml", "Chaser lux 30 ml", "Chaser black 30 ml 50 mg",
+    
+    # Поди
     "Xlim", "Vaporesso", "Інші бренди",
-    "Картриджі Xlim", "Картриджі Vaporesso"
+    
+    # Картриджі
+    "Картриджі Xlim", "Картриджі Vaporesso",
+    "Картриджі NeXlim", "Картриджі Ursa V3"
 ])
 def handle_products(message):
-    """Обробка вибору товарів (проста версія)"""
+    """Обробка вибору товарів"""
     text = message.text
     chat_id = message.chat.id
     
     # Отримуємо текст з products.py
     response = get_product_response(text)
     
-    bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=markup)
+    # Просто відправляємо текст без кнопки замовлення
+    bot.send_message(chat_id, response, parse_mode='Markdown')
 
 # ==================== КЛІЄНТИ: ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text in ["Як замовити?", "Оплата та доставка",
@@ -450,6 +457,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
