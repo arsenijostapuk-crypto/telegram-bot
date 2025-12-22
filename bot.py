@@ -119,13 +119,6 @@ def handle_products(message):
     # Отримуємо текст з products.py
     response = get_product_response(text)
     
-    # Додаємо кнопку замовлення
-    markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(
-        "📦 Замовити цей товар", 
-        callback_data=f"order_{text.replace(' ', '_')}"
-    ))
-    
     bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=markup)
 
 # ==================== КЛІЄНТИ: ІНФОРМАЦІЯ ====================
@@ -457,6 +450,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
