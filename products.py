@@ -197,7 +197,7 @@ def get_cartridge_response(product_name):
 • Автоматичне блокування
 • Прозорий корпус
 """
-    if product_name == "Картриджі Ursa V3":
+    elif product_name == "Картриджі Ursa V3":
         return """
 🎯 *Картриджі Ursa V3 PRO*
 
