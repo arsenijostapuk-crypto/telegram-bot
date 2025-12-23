@@ -209,7 +209,7 @@ def process_order(message):
     
     # Повідомлення адмінам для чату
     notify_admins_about_order(user, order_text)
-
+.
 def send_to_admin_group(user, order_text):
     """Відправляє замовлення в групу"""
     try:
@@ -234,46 +234,36 @@ def send_to_admin_group(user, order_text):
         print(f"❌ Помилка відправки в групу: {e}")
 
 # ==================== АДМІНИ ====================
-@bot.message_handler(commands=['admin'])
+@bot.message_handler(commands=['admin'])  # <-- ОСЬ ТУТ ПОЧИНАЄТЬСЯ
 def admin_panel(message):
-    if not is_admin(message.from_user.id):
-        bot.reply_to(message, "⛔ Доступ заборонено")
+    user_id = message.from_user.id
+    username = message.from_user.username or "немає"
+    
+    print(f"🛠️ DEBUG /admin: Користувач {user_id} (@{username})")
+    print(f"🛠️ DEBUG /admin: Перевірка is_admin({user_id}) = {is_admin(user_id)}")
+    
+    if not is_admin(user_id):
+        bot.reply_to(message, 
+                    f"⛔ *Доступ заборонено*\n\n"
+                    f"Ваш ID: `{user_id}`\n"
+                    f"Username: @{username}\n"
+                    f"ADMIN_IDS: {ADMIN_IDS}\n\n"
+                    f"Зв'яжіться з адміністратором для доступу.",
+                    parse_mode='Markdown')
         return
     
-    bot.send_message(message.chat.id, "👑 *Адмін-панель*", 
-                    parse_mode='Markdown', reply_markup=admin_main_menu())
+    # Якщо адмін
+    bot.send_message(message.chat.id, 
+                    f"👑 *Адмін-панель*\n\n"
+                    f"Вітаємо, {message.from_user.first_name}!\n"
+                    f"ID: `{user_id}`\n"
+                    f"Username: @{username}",
+                    parse_mode='Markdown', 
+                    reply_markup=admin_main_menu())
 
+# Наступна функція (вже є у вас)
 @bot.message_handler(func=lambda m: m.text == "📋 Активні чати")
 def show_active_chats(message):
-    if not is_admin(message.from_user.id):
-        return
-    
-    active_chats = chat_manager.get_active_chats()
-    
-    if not active_chats:
-        bot.send_message(message.chat.id, "📭 Немає активних чатів")
-        return
-    
-    text = "📋 *Активні чати/замовлення:*\n\n"
-    for user_id, chat in active_chats.items():
-        text += f"👤 {chat['user_name']}\n"
-        text += f"🆔: `{user_id}`\n"
-        text += f"💬 Повідомлень: {len(chat['messages'])}\n"
-        if chat.get('unread'):
-            text += "🔴 *НЕПРОЧИТАНЕ*\n"
-        text += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-    
-    markup = types.InlineKeyboardMarkup()
-    for user_id in active_chats.keys():
-        markup.add(types.InlineKeyboardButton(
-            f"💬 Чат з {user_id[:6]}...", 
-            callback_data=f"open_{user_id}"
-        ))
-    
-    bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup)
-
-@bot.message_handler(func=lambda m: m.text == "🆕 Нові повідомлення")
-def show_unread_chats(message):
     if not is_admin(message.from_user.id):
         return
     
@@ -781,6 +771,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     print(f"🚀 Запускаю бота на порті {port}")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
