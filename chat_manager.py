@@ -1,3 +1,4 @@
+# chat_manager.py
 import json
 import os
 from datetime import datetime
@@ -18,17 +19,22 @@ class ChatManager:
             json.dump(self.chats, f, ensure_ascii=False, indent=2)
     
     def start_chat(self, user_id, user_name, username):
+        # Зберігаємо ВСІХ користувачів, які натиснули /start
         if str(user_id) not in self.chats:
             self.chats[str(user_id)] = {
                 "user_name": user_name,
                 "username": username or "немає",
                 "started": str(datetime.now()),
+                "last_active": str(datetime.now()),
                 "messages": [],
-                "status": "active",
-                "unread": True
+                "status": "registered",  # Новий статус для зареєстрованих
+                "unread": False
             }
         else:
-            self.chats[str(user_id)]["unread"] = True
+            # Оновлюємо час останньої активності
+            self.chats[str(user_id)]["last_active"] = str(datetime.now())
+            self.chats[str(user_id)]["user_name"] = user_name
+            self.chats[str(user_id)]["username"] = username or "немає"
         
         self.save_chats()
         return self.chats[str(user_id)]
@@ -45,6 +51,7 @@ class ChatManager:
         
         self.chats[str(user_id)]["messages"].append(message)
         self.chats[str(user_id)]["unread"] = not from_admin
+        self.chats[str(user_id)]["status"] = "active"  # Стає активним при спілкуванні
         self.save_chats()
         return True
     
@@ -55,5 +62,16 @@ class ChatManager:
     def get_unread_chats(self):
         return {uid: chat for uid, chat in self.chats.items() 
                 if chat.get("unread") == True}
+    
+    # НОВА ФУНКЦІЯ: отримати всіх зареєстрованих користувачів
+    def get_all_users(self):
+        """Отримати всіх користувачів, які натиснули /start"""
+        return {uid: chat for uid, chat in self.chats.items() 
+                if chat.get("status") in ["registered", "active", "closed"]}
+
+chat_manager = ChatManager()
+        return {uid: chat for uid, chat in self.chats.items() 
+                if chat.get("unread") == True}
+
 
 chat_manager = ChatManager()
