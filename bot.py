@@ -764,8 +764,9 @@ def index():
 @app.route('/set_webhook')
 def set_webhook():
     bot.remove_webhook()
-    bot.set_webhook(f"https://telegram-bot-iss2.onrender.com/{TOKEN}")
-    return "✅ Вебхук встановлено"
+    webhook_url = f"https://kobraua_bot.onrender.com/{TOKEN}"
+    result = bot.set_webhook(webhook_url)
+    return f"✅ Вебхук встановлено на {webhook_url}<br>Результат: {result}"
 
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
@@ -778,8 +779,9 @@ def webhook():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-
+    print(f"🚀 Запускаю бота на порті {port}")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
