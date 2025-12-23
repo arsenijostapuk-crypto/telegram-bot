@@ -408,6 +408,7 @@ def close_chat(call):
 
 # Обробник для скасування режиму відповіді
 # ==================== РОЗСИЛКА ВСІМ КОРИСТУВАЧАМ ====================
+# ==================== РОЗСИЛКА ВСІМ КОРИСТУВАЧАМ ====================
 @bot.message_handler(func=lambda m: m.text == "📢 Розсилка" and is_admin(m.from_user.id))
 def broadcast_menu(message):
     # Отримуємо загальну кількість користувачів
@@ -597,6 +598,22 @@ def cancel_broadcast(call):
     bot.send_message(admin_id, "❌ Розсилка скасована.", reply_markup=admin_main_menu())
     bot.answer_callback_query(call.id, "Розсилка скасована")
 
+# Обробник команди /stop для користувачів
+@bot.message_handler(commands=['stop'])
+def handle_stop_command(message):
+    user_id = message.from_user.id
+    
+    bot.send_message(user_id,
+                    "🔕 *Ви відписались від розсилок*\n\n"
+                    "Ви більше не будете отримувати повідомлення про новинки та акції.\n\n"
+                    "Якщо захочете повернутись, просто напишіть /start",
+                    parse_mode='Markdown')
+    
+    # Позначаємо користувача як такого, що відписався
+    if str(user_id) in chat_manager.chats:
+        chat_manager.chats[str(user_id)]["status"] = "unsubscribed"
+        chat_manager.save_chats()
+
 # ШВИДКА КОМАНДА ДЛЯ РОЗСИЛКИ
 @bot.message_handler(commands=['broadcast'])
 def quick_broadcast_command(message):
@@ -643,6 +660,7 @@ def show_user_stats(call):
     registered = 0
     blocked = 0
     closed = 0
+    unsubscribed = 0
     
     for user_data in all_users.values():
         status = user_data.get('status', 'registered')
@@ -654,16 +672,24 @@ def show_user_stats(call):
             blocked += 1
         elif status == 'closed':
             closed += 1
+        elif status == 'unsubscribed':
+            unsubscribed += 1
+    
+    # Отримуємо всіх користувачів (включаючи відписаних)
+    total_all = len(chat_manager.chats)
     
     stats_text = f"📊 *Статистика користувачів*\n\n"
-    stats_text += f"• 👥 Всього користувачів: {len(all_users)}\n"
+    stats_text += f"• 👥 Всього зареєстровано: {total_all}\n"
+    stats_text += f"• ✅ Для розсилки доступно: {len(all_users)}\n"
     stats_text += f"• 💬 Активні чати: {active}\n"
     stats_text += f"• 📝 Зареєстровані: {registered}\n"
     stats_text += f"• ✅ Завершені чати: {closed}\n"
-    stats_text += f"• 🚫 Заблоковані: {blocked}\n\n"
+    stats_text += f"• 🚫 Заблоковані: {blocked}\n"
+    stats_text += f"• 🔕 Відписались: {unsubscribed}\n\n"
     
-    if len(all_users) > 0:
-        stats_text += f"📈 *Конверсія в активні:* {active/len(all_users)*100:.1f}%\n"
+    if total_all > 0:
+        coverage = len(all_users)/total_all*100
+        stats_text += f"📈 *Охоплення розсилки:* {coverage:.1f}%\n"
     
     bot.send_message(admin_id, stats_text, parse_mode='Markdown')
     bot.answer_callback_query(call.id)
@@ -691,4 +717,5 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
