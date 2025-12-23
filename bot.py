@@ -209,7 +209,6 @@ def process_order(message):
     
     # Повідомлення адмінам для чату
     notify_admins_about_order(user, order_text)
-.
 def send_to_admin_group(user, order_text):
     """Відправляє замовлення в групу"""
     try:
@@ -771,6 +770,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     print(f"🚀 Запускаю бота на порті {port}")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
