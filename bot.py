@@ -372,7 +372,75 @@ def start_reply(call):
         reply_markup=cancel_markup
     )
     bot.answer_callback_query(call.id)
+# Обробник для скасування режиму відповіді адміна
+@bot.message_handler(commands=['cancel'])
+def cancel_reply_mode(message):
+    if message.from_user.id in admin_reply_mode:
+        user_id = admin_reply_mode[message.from_user.id]
+        del admin_reply_mode[message.from_user.id]
+        # Прибираємо спеціальну клавіатуру
+        remove_markup = types.ReplyKeyboardRemove()
+        bot.send_message(
+            message.chat.id, 
+            f"❌ Режим відповіді клієнту {user_id} скасовано.",
+            reply_markup=remove_markup
+        )
+    else:
+        bot.send_message(message.chat.id, "ℹ️ Ви не в режимі відповіді.")
 
+# Обробка повідомлень адміна для клієнтів
+@bot.message_handler(func=lambda m: m.from_user.id in admin_reply_mode)
+def send_reply_to_client(message):
+    admin_id = message.from_user.id
+    user_id = admin_reply_mode.get(admin_id)
+    
+    if not user_id or message.text.startswith('/'):
+        return
+    
+    # Якщо адмін відправляє команду /cancel - скасувати режим
+    if message.text.strip() == '/cancel':
+        if admin_id in admin_reply_mode:
+            del admin_reply_mode[admin_id]
+            remove_markup = types.ReplyKeyboardRemove()
+            bot.send_message(admin_id, "❌ Режим відповіді скасовано.", reply_markup=remove_markup)
+        return
+    
+    try:
+        # Відправляємо клієнту
+        bot.send_message(
+            user_id, 
+            f"📨 *Від менеджера:*\n\n{message.text}",
+            parse_mode='Markdown'
+        )
+        
+        # Зберігаємо в історію
+        chat_manager.add_message(user_id, message.text, from_admin=True)
+        
+        # Підтвердження адміну
+        bot.send_message(admin_id, f"✅ Відповідь надіслана клієнту {user_id}")
+        
+        # Прибираємо спеціальну клавіатуру
+        remove_markup = types.ReplyKeyboardRemove()
+        bot.send_message(admin_id, "✅ Режим відповіді завершено.", reply_markup=remove_markup)
+        
+        # Виходимо з режиму відповіді
+        if admin_id in admin_reply_mode:
+            del admin_reply_mode[admin_id]
+        
+    except ApiTelegramException as e:
+        error_msg = str(e).lower()
+        if "bot was blocked" in error_msg or "chat not found" in error_msg:
+            bot.send_message(admin_id, f"❌ Не вдалося надіслати. Клієнт заблокував бота або чат недоступний.")
+            # Позначаємо чат як недоступний
+            chat = chat_manager.chats.get(str(user_id))
+            if chat:
+                chat['status'] = 'blocked'
+                chat_manager.save_chats()
+        else:
+            bot.send_message(admin_id, f"❌ Помилка: {e}")
+        # Не видаляємо admin_reply_mode, щоб адмін міг спробувати ще раз
+    except Exception as e:
+        bot.send_message(admin_id, f"❌ Невідома помилка: {e}")
 # ОБРОБНИК ДЛЯ КНОПКИ "ЗАВЕРШИТИ" - ЦЕ ГОЛОВНЕ ЩО ПОТРІБНО!
 @bot.callback_query_handler(func=lambda call: call.data.startswith('close_'))
 def close_chat(call):
@@ -712,6 +780,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
