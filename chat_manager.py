@@ -1,4 +1,3 @@
-# chat_manager.py
 import json
 import os
 from datetime import datetime
@@ -35,6 +34,9 @@ class ChatManager:
             self.chats[str(user_id)]["last_active"] = str(datetime.now())
             self.chats[str(user_id)]["user_name"] = user_name
             self.chats[str(user_id)]["username"] = username or "немає"
+            # Якщо користувач був відписаний, знову підписуємо
+            if self.chats[str(user_id)].get("status") == "unsubscribed":
+                self.chats[str(user_id)]["status"] = "registered"
         
         self.save_chats()
         return self.chats[str(user_id)]
@@ -65,13 +67,12 @@ class ChatManager:
     
     # НОВА ФУНКЦІЯ: отримати всіх зареєстрованих користувачів
     def get_all_users(self):
-        """Отримати всіх користувачів, які натиснули /start"""
+        """Отримати всіх користувачів, які натиснули /start і не відписались"""
         return {uid: chat for uid, chat in self.chats.items() 
-                if chat.get("status") in ["registered", "active", "closed"]}
+                if chat.get("status") not in ["unsubscribed", "blocked"]}
 
 chat_manager = ChatManager()
-        return {uid: chat for uid, chat in self.chats.items() 
-                if chat.get("unread") == True}
 
 
 chat_manager = ChatManager()
+
