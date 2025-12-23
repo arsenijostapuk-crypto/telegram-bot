@@ -25,15 +25,13 @@ class ChatManager:
                 "started": str(datetime.now()),
                 "last_active": str(datetime.now()),
                 "messages": [],
-                "status": "registered",  # Новий статус для зареєстрованих
+                "status": "registered",
                 "unread": False
             }
         else:
-            # Оновлюємо час останньої активності
             self.chats[str(user_id)]["last_active"] = str(datetime.now())
             self.chats[str(user_id)]["user_name"] = user_name
             self.chats[str(user_id)]["username"] = username or "немає"
-            # Якщо користувач був відписаний, знову підписуємо
             if self.chats[str(user_id)].get("status") == "unsubscribed":
                 self.chats[str(user_id)]["status"] = "registered"
         
@@ -52,7 +50,7 @@ class ChatManager:
         
         self.chats[str(user_id)]["messages"].append(message)
         self.chats[str(user_id)]["unread"] = not from_admin
-        self.chats[str(user_id)]["status"] = "active"  # Стає активним при спілкуванні
+        self.chats[str(user_id)]["status"] = "active"
         self.save_chats()
         return True
     
@@ -63,8 +61,6 @@ class ChatManager:
     def get_unread_chats(self):
         return {uid: chat for uid, chat in self.chats.items() 
                 if chat.get("unread") == True}
-    
-    # =============== НОВІ ФУНКЦІЇ ДЛЯ РОЗСИЛКИ ===============
     
     def get_all_users(self):
         """Отримати всіх користувачів, які натиснули /start і не відписались"""
@@ -97,5 +93,4 @@ class ChatManager:
         
         return stats
 
-# Створюємо глобальний екземпляр
 chat_manager = ChatManager()
