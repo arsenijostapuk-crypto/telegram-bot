@@ -18,7 +18,6 @@ class ChatManager:
             json.dump(self.chats, f, ensure_ascii=False, indent=2)
     
     def start_chat(self, user_id, user_name, username):
-        # Зберігаємо ВСІХ користувачів, які натиснули /start
         if str(user_id) not in self.chats:
             self.chats[str(user_id)] = {
                 "user_name": user_name,
@@ -65,14 +64,38 @@ class ChatManager:
         return {uid: chat for uid, chat in self.chats.items() 
                 if chat.get("unread") == True}
     
-    # НОВА ФУНКЦІЯ: отримати всіх зареєстрованих користувачів
+    # =============== НОВІ ФУНКЦІЇ ДЛЯ РОЗСИЛКИ ===============
+    
     def get_all_users(self):
         """Отримати всіх користувачів, які натиснули /start і не відписались"""
         return {uid: chat for uid, chat in self.chats.items() 
                 if chat.get("status") not in ["unsubscribed", "blocked"]}
+    
+    def get_user_stats(self):
+        """Отримати статистику по користувачам"""
+        stats = {
+            'total': len(self.chats),
+            'active': 0,
+            'registered': 0,
+            'blocked': 0,
+            'unsubscribed': 0,
+            'closed': 0
+        }
+        
+        for chat in self.chats.values():
+            status = chat.get('status', 'registered')
+            if status == 'active':
+                stats['active'] += 1
+            elif status == 'registered':
+                stats['registered'] += 1
+            elif status == 'blocked':
+                stats['blocked'] += 1
+            elif status == 'unsubscribed':
+                stats['unsubscribed'] += 1
+            elif status == 'closed':
+                stats['closed'] += 1
+        
+        return stats
 
+# Створюємо глобальний екземпляр
 chat_manager = ChatManager()
-
-
-chat_manager = ChatManager()
-
