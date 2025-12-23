@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask, request
 import telebot
 from telebot import types
@@ -406,7 +407,6 @@ def close_chat(call):
 
 # Обробник для скасування режиму відповіді
 # ==================== РОЗСИЛКА ВСІМ КОРИСТУВАЧАМ ====================
-# ==================== РОЗСИЛКА ВСІМ КОРИСТУВАЧАМ ====================
 @bot.message_handler(func=lambda m: m.text == "📢 Розсилка" and is_admin(m.from_user.id))
 def broadcast_menu(message):
     # Отримуємо загальну кількість користувачів
@@ -715,6 +715,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
 
     app.run(host='0.0.0.0', port=port)
+
 
 
 
