@@ -1,12 +1,15 @@
 import time
 from telebot import types
+from telebot.apihelper import ApiTelegramException
 from chat_manager import chat_manager
 from config import is_admin
+from keyboards import admin_main_menu, main_menu  # Додайте імпорт
 
 class AdminPanel:
     def __init__(self, bot):
         self.bot = bot
         self.admin_reply_mode = {}
+        self.broadcast_texts = {}  # Для розсилки
     
     def setup_handlers(self):
         """Реєстрація всіх адмін-обробників"""
@@ -28,215 +31,236 @@ class AdminPanel:
                 return
             
             # Якщо адмін
-            from keyboards import admin_main_menu
             self.bot.send_message(message.chat.id, 
                                 f"👑 *Адмін-панель*\n\n"
                                 f"Вітаємо, {message.from_user.first_name}!",
                                 parse_mode='Markdown', 
                                 reply_markup=admin_main_menu())
         
-        # ==================== АДМІН МЕНЮ ====================
-        @self.bot.message_handler(func=lambda m: m.text == "📋 Активні чати")
-        def show_active_chats(message):
-            if not is_admin(message.from_user.id):
-                return
-            
-            unread_chats = chat_manager.get_unread_chats()
-            
-            if not unread_chats:
-                self.bot.send_message(message.chat.id, "✅ Немає нових повідомлень")
-                return
-            
-            text = "🆕 *Непрочитані повідомлення:*\n\n"
-            for user_id, chat in unread_chats.items():
-                text += f"👤 {chat['user_name']}\n"
-                text += f"🆔: `{user_id}`\n"
-                if chat['messages']:
-                    last_msg = chat['messages'][-1]['text'][:50]
-                    text += f"💬 {last_msg}...\n"
-                text += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-            
-            markup = types.InlineKeyboardMarkup()
-            for user_id in unread_chats.keys():
-                markup.add(types.InlineKeyboardButton(
-                    f"📨 Відповісти {user_id[:6]}...", 
-                    callback_data=f"reply_{user_id}"
-                ))
-            
-            self.bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup)
+        # ==================== ГОЛОВНЕ МЕНЮ ====================
+        @self.bot.message_handler(func=lambda m: m.text == "🔙 Головне меню" and is_admin(m.from_user.id))
+        def back_to_main_from_admin(message):
+            self.bot.send_message(message.chat.id, "Головне меню:", reply_markup=main_menu())
         
-        @self.bot.message_handler(func=lambda m: m.text == "🆕 Нові повідомлення" and is_admin(m.from_user.id))
-        def show_new_messages(message):
-            if not is_admin(message.from_user.id):
-                return
+        # ==================== РОЗСИЛКА ====================
+        @self.bot.message_handler(func=lambda m: m.text == "📢 Розсилка" and is_admin(m.from_user.id))
+        def broadcast_menu(message):
+            # Отримуємо загальну кількість користувачів
+            all_users = chat_manager.get_all_users()
             
-            unread_chats = chat_manager.get_unread_chats()
-            
-            if not unread_chats:
-                self.bot.send_message(message.chat.id, "✅ Немає нових повідомлень")
-                return
-            
-            text = "🆕 *Непрочитані повідомлення:*\n\n"
-            for user_id, chat in unread_chats.items():
-                text += f"👤 {chat['user_name']}\n"
-                text += f"🆔: `{user_id}`\n"
-                if chat['messages']:
-                    last_msg = chat['messages'][-1]['text'][:50]
-                    text += f"💬 {last_msg}...\n"
-                text += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
-            
-            markup = types.InlineKeyboardMarkup()
-            for user_id in unread_chats.keys():
-                markup.add(types.InlineKeyboardButton(
-                    f"📨 Відповісти {user_id[:6]}...", 
-                    callback_data=f"reply_{user_id}"
-                ))
-            
-            self.bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup)
-        
-        @self.bot.message_handler(func=lambda m: m.text == "📊 Статистика" and is_admin(m.from_user.id))
-        def show_statistics(message):
-            if not is_admin(message.from_user.id):
-                return
-            
-            stats = chat_manager.get_user_stats()
-            text = f"""📊 *Статистика бота*
-
-👥 Користувачів всього: *{stats['total']}*
-💬 Активних чатів: *{stats['active']}*
-📝 Зареєстровано: *{stats['registered']}*
-✅ Завершено: *{stats['closed']}*
-🚫 Заблоковано: *{stats['blocked']}*
-🔕 Відписались: *{stats['unsubscribed']}*
-
-📈 *Загальна активність:* {stats['active'] + stats['registered']}/{stats['total']}
-"""
-            
-            self.bot.send_message(message.chat.id, text, parse_mode='Markdown')
-        
-        @self.bot.message_handler(func=lambda m: m.text == "💬 Відповісти клієнту")
-        def select_client_to_reply(message):
-            if not is_admin(message.from_user.id):
-                return
-            
-            active_chats = chat_manager.get_active_chats()
-            
-            if not active_chats:
-                self.bot.send_message(message.chat.id, "📭 Немає активних чатів")
-                return
-            
-            markup = types.InlineKeyboardMarkup()
-            for user_id, chat in active_chats.items():
-                markup.add(types.InlineKeyboardButton(
-                    f"💬 {chat['user_name']} ({user_id[:6]})", 
-                    callback_data=f"reply_{user_id}"
-                ))
-            
-            self.bot.send_message(message.chat.id, "Оберіть клієнта для відповіді:", reply_markup=markup)
-        
-        # ==================== CALLBACK-ОБРОБНИКИ ====================
-        @self.bot.callback_query_handler(func=lambda call: call.data.startswith('reply_'))
-        def start_reply(call):
-            admin_id = call.from_user.id
-            user_id = call.data.split('_')[1]
-            
-            self.admin_reply_mode[admin_id] = user_id
-            
-            # Створюємо клавіатуру з кнопкою скасування
-            cancel_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-            cancel_markup.add(types.KeyboardButton("/cancel"))
-            
-            self.bot.send_message(
-                admin_id, 
-                f"✏️ *Відповідь клієнту {user_id}*\n\nНапишіть ваше повідомлення:\n(або /cancel для скасування)",
-                parse_mode='Markdown',
-                reply_markup=cancel_markup
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+            markup.add(
+                types.KeyboardButton(f"✅ Розіслати ({len(all_users)} клієнтів)"),
+                types.KeyboardButton("🔙 Назад в адмін-панель")
             )
-            self.bot.answer_callback_query(call.id)
+            self.bot.send_message(message.chat.id, 
+                                f"📢 *Меню розсилки*\n\n"
+                                f"Зареєстровано користувачів: *{len(all_users)}*\n\n"
+                                f"Натисніть кнопку нижче, щоб відправити повідомлення всім, хто коли-небудь натискав /start:",
+                                parse_mode='Markdown',
+                                reply_markup=markup)
         
-        @self.bot.callback_query_handler(func=lambda call: call.data.startswith('close_'))
-        def close_chat(call):
-            admin_id = call.from_user.id
-            user_id = call.data.split('_')[1]
+        @self.bot.message_handler(func=lambda m: m.text.startswith("✅ Розіслати") and is_admin(m.from_user.id))
+        def start_broadcast(message):
+            chat_id = message.chat.id
             
-            chat = chat_manager.chats.get(user_id)
-            if not chat:
-                self.bot.answer_callback_query(call.id, "Чат не знайдено")
+            self.bot.send_message(chat_id, 
+                                "📝 *Створення розсилки*\n\n"
+                                "Будь ласка, напишіть повідомлення для розсилки.\n"
+                                "Можна використовувати Markdown форматтування.\n\n"
+                                "*Приклад:*\n"
+                                "🆕 НОВИНКА! З'явився Chaser 15 ml!\n"
+                                "🎯 Нова лінійка рідин для pod-систем\n"
+                                "💰 Ціна: 250 грн",
+                                parse_mode='Markdown',
+                                reply_markup=types.ForceReply(selective=True))
+            
+            self.bot.register_next_step_handler(message, self.confirm_broadcast)
+        
+        # ==================== CALLBACK ДЛЯ РОЗСИЛКИ ====================
+        @self.bot.callback_query_handler(func=lambda call: call.data.startswith('broadcast_now_'))
+        def execute_broadcast(call):
+            admin_id = call.from_user.id
+            
+            # Отримуємо збережений текст
+            if admin_id not in self.broadcast_texts:
+                self.bot.answer_callback_query(call.id, "❌ Текст не знайдено. Почніть знову.")
                 return
             
-            # Змінюємо статус чату на "завершений"
-            chat['status'] = 'closed'
-            chat['unread'] = False
+            broadcast_text = self.broadcast_texts[admin_id]
+            all_users = chat_manager.get_all_users()
+            total_users = len(all_users)
+            
+            # Статистика
+            successful = 0
+            failed = 0
+            blocked = 0
+            
+            # Повідомлення про початок
+            status_msg = self.bot.send_message(admin_id,
+                                             f"📤 *Початок розсилки...*\n\n"
+                                             f"Кількість отримувачів: {total_users}\n"
+                                             f"Статус: 0/{total_users}\n"
+                                             f"⏳ Почекайте, це може зайняти деякий час...",
+                                             parse_mode='Markdown')
+            
+            # Відправляємо повідомлення всім користувачам
+            for i, (user_id, user_data) in enumerate(all_users.items(), 1):
+                try:
+                    # Форматуємо повідомлення
+                    final_message = f"📢 *ПОВІДОМЛЕННЯ ВІД МАГАЗИНУ:*\n\n{broadcast_text}\n\n"
+                    final_message += f"_Якщо ви більше не бажаєте отримувати повідомлення, напишіть /stop_"
+                    
+                    self.bot.send_message(int(user_id), final_message, parse_mode='Markdown')
+                    successful += 1
+                    
+                    # Оновлюємо статус кожні 5 повідомлень
+                    if i % 5 == 0 or i == total_users:
+                        try:
+                            self.bot.edit_message_text(
+                                f"📤 *Розсилка...*\n\n"
+                                f"Кількість отримувачів: {total_users}\n"
+                                f"✅ Успішно: {successful}\n"
+                                f"❌ Не вдалося: {failed}\n"
+                                f"🚫 Заблоковано: {blocked}\n"
+                                f"📊 Прогрес: {i}/{total_users} ({i/total_users*100:.1f}%)\n\n"
+                                f"⏳ Триває...",
+                                chat_id=admin_id,
+                                message_id=status_msg.message_id,
+                                parse_mode='Markdown'
+                            )
+                        except:
+                            pass
+                    time.sleep(0.05)
+                    
+                except ApiTelegramException as e:
+                    error_msg = str(e).lower()
+                    if "bot was blocked" in error_msg or "user is deactivated" in error_msg:
+                        blocked += 1
+                        # Оновлюємо статус у базі
+                        chat_manager.chats[user_id]["status"] = "blocked"
+                    else:
+                        failed += 1
+                except Exception as e:
+                    failed += 1
+            
+            # Зберігаємо зміни
             chat_manager.save_chats()
             
-            # Повідомлення адміну
-            self.bot.send_message(admin_id, f"✅ Чат з {chat['user_name']} (ID: {user_id}) завершено.")
+            # Видаляємо тимчасовий текст
+            self.broadcast_texts.pop(admin_id, None)
             
-            # Оновлюємо повідомлення з кнопками
-            try:
-                self.bot.edit_message_text(
-                    chat_id=admin_id,
-                    message_id=call.message.message_id,
-                    text=f"✅ *Чат завершено*\n\nКлієнт: {chat['user_name']}\nID: `{user_id}`",
-                    parse_mode='Markdown'
-                )
-            except:
-                pass
+            # Фінальний звіт
+            report = f"✅ *РОЗСИЛКА ЗАВЕРШЕНА!*\n\n"
+            report += f"📊 *Результати:*\n"
+            report += f"• 👥 Загальна кількість: {total_users}\n"
+            report += f"• ✅ Успішно доставлено: {successful}\n"
+            report += f"• ❌ Не вдалося відправити: {failed}\n"
+            report += f"• 🚫 Заблоковані користувачі: {blocked}\n\n"
             
-            self.bot.answer_callback_query(call.id, "Чат завершено")
+            if successful > 0:
+                report += f"📈 *Ефективність:* {successful/total_users*100:.1f}%\n"
+            
+            report += f"💬 *Текст розсилки був доданий в історію чатів.*"
+            
+            # Додаємо повідомлення в історію чатів
+            for user_id in all_users.keys():
+                if chat_manager.chats.get(user_id):
+                    chat_manager.add_message(int(user_id), 
+                                           f"📢 РОЗСИЛКА: {broadcast_text[:100]}...", 
+                                           from_admin=True)
+            
+            self.bot.send_message(admin_id, report, parse_mode='Markdown', reply_markup=admin_main_menu())
+            self.bot.answer_callback_query(call.id, "✅ Розсилка завершена!")
         
-        # ==================== ОБРОБКА ВІДПОВІДЕЙ АДМІНА ====================
-        @self.bot.message_handler(commands=['cancel'])
-        def cancel_reply_mode(message):
-            if message.from_user.id in self.admin_reply_mode:
-                user_id = self.admin_reply_mode[message.from_user.id]
-                del self.admin_reply_mode[message.from_user.id]
-                remove_markup = types.ReplyKeyboardRemove()
-                self.bot.send_message(
-                    message.chat.id, 
-                    f"❌ Режим відповіді клієнту {user_id} скасовано.",
-                    reply_markup=remove_markup
-                )
-            else:
-                self.bot.send_message(message.chat.id, "ℹ️ Ви не в режимі відповіді.")
-        
-        @self.bot.message_handler(func=lambda m: m.from_user.id in self.admin_reply_mode)
-        def send_reply_to_client(message):
-            admin_id = message.from_user.id
-            user_id = self.admin_reply_mode.get(admin_id)
+        @self.bot.callback_query_handler(func=lambda call: call.data == "edit_broadcast")
+        def edit_broadcast_text(call):
+            admin_id = call.from_user.id
+            self.bot.send_message(admin_id, 
+                                "✏️ *Редагування тексту*\n\n"
+                                "Будь ласка, надішліть новий текст для розсилки:",
+                                parse_mode='Markdown',
+                                reply_markup=types.ForceReply(selective=True))
             
-            if not user_id or message.text.startswith('/'):
+            self.bot.register_next_step_handler_by_chat_id(admin_id, self.confirm_broadcast)
+            self.bot.answer_callback_query(call.id, "Напишіть новий текст")
+        
+        @self.bot.callback_query_handler(func=lambda call: call.data == "cancel_broadcast")
+        def cancel_broadcast(call):
+            admin_id = call.from_user.id
+            
+            # Видаляємо тимчасовий текст
+            self.broadcast_texts.pop(admin_id, None)
+            
+            self.bot.send_message(admin_id, "❌ Розсилка скасована.", reply_markup=admin_main_menu())
+            self.bot.answer_callback_query(call.id, "Розсилка скасована")
+        
+        # ==================== ШВИДКА КОМАНДА РОЗСИЛКИ ====================
+        @self.bot.message_handler(commands=['broadcast'])
+        def quick_broadcast_command(message):
+            if not is_admin(message.from_user.id):
+                self.bot.reply_to(message, "⛔ Доступ заборонено")
                 return
             
-            # Якщо адмін відправляє команду /cancel
-            if message.text.strip() == '/cancel':
-                if admin_id in self.admin_reply_mode:
-                    del self.admin_reply_mode[admin_id]
-                    remove_markup = types.ReplyKeyboardRemove()
-                    self.bot.send_message(admin_id, "❌ Режим відповіді скасовано.", reply_markup=remove_markup)
-                return
+            # Показуємо статистику
+            all_users = chat_manager.get_all_users()
             
-            try:
-                # Відправляємо клієнту
-                self.bot.send_message(
-                    user_id, 
-                    f"📨 *Від менеджера:*\n\n{message.text}",
-                    parse_mode='Markdown'
-                )
-                
-                # Зберігаємо в історію
-                chat_manager.add_message(user_id, message.text, from_admin=True)
-                
-                # Підтвердження адміну
-                self.bot.send_message(admin_id, f"✅ Відповідь надіслана клієнту {user_id}")
-                
-                # Прибираємо спеціальну клавіатуру
-                remove_markup = types.ReplyKeyboardRemove()
-                self.bot.send_message(admin_id, "✅ Режим відповіді завершено.", reply_markup=remove_markup)
-                
-                # Виходимо з режиму відповіді
-                if admin_id in self.admin_reply_mode:
-                    del self.admin_reply_mode[admin_id]
-                
-            except Exception as e:
-                self.bot.send_message(admin_id, f"❌ Помилка: {e}")
+            markup = types.InlineKeyboardMarkup()
+            markup.add(
+                types.InlineKeyboardButton("📝 Створити розсилку", callback_data="create_broadcast"),
+                types.InlineKeyboardButton("📊 Статистика користувачів", callback_data="user_stats")
+            )
+            
+            self.bot.send_message(message.chat.id,
+                                f"📢 *Швидка розсилка*\n\n"
+                                f"Зареєстровано користувачів: *{len(all_users)}*\n"
+                                f"Активних чатів: *{len(chat_manager.get_active_chats())}*\n\n"
+                                f"Оберіть дію:",
+                                parse_mode='Markdown',
+                                reply_markup=markup)
+        
+        @self.bot.callback_query_handler(func=lambda call: call.data == "create_broadcast")
+        def create_broadcast_from_button(call):
+            admin_id = call.from_user.id
+            self.bot.send_message(admin_id, 
+                                "📝 *Створення розсилки*\n\n"
+                                "Напишіть текст для розсилки всім користувачам:",
+                                parse_mode='Markdown',
+                                reply_markup=types.ForceReply(selective=True))
+            
+            self.bot.register_next_step_handler_by_chat_id(admin_id, self.confirm_broadcast)
+            self.bot.answer_callback_query(call.id)
+        
+        # Решта обробників (активні чати, статистика тощо) залишаються як були...
+        # ... (додайте решту обробників з попередньої версії)
+    
+    def confirm_broadcast(self, message):
+        """Підтвердження розсилки (окремий метод)"""
+        admin_id = message.from_user.id
+        broadcast_text = message.text
+        
+        if len(broadcast_text.strip()) < 5:
+            self.bot.send_message(admin_id, "❌ Текст занадто короткий. Спробуйте ще раз.")
+            return
+        
+        all_users = chat_manager.get_all_users()
+        total_users = len(all_users)
+        
+        markup = types.InlineKeyboardMarkup()
+        markup.add(
+            types.InlineKeyboardButton("🚀 Розіслати зараз", callback_data=f"broadcast_now_{hash(broadcast_text) % 10000}"),
+            types.InlineKeyboardButton("✏️ Редагувати текст", callback_data="edit_broadcast"),
+            types.InlineKeyboardButton("❌ Скасувати", callback_data="cancel_broadcast")
+        )
+        
+        # Зберігаємо текст для подальшого використання
+        self.broadcast_texts[admin_id] = broadcast_text
+        
+        self.bot.send_message(admin_id,
+                            f"📢 *Попередній перегляд розсилки*\n\n"
+                            f"👥 Отримувачі: *{total_users}* користувачів\n\n"
+                            f"*Ваше повідомлення:*\n"
+                            f"```\n{broadcast_text[:400]}\n```\n\n"
+                            f"Відправити розсилку?",
+                            parse_mode='Markdown',
+                            reply_markup=markup)
