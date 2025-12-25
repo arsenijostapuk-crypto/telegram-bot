@@ -199,28 +199,7 @@ def cancel_reply(message):
         bot.send_message(message.chat.id, "❌ Режим відповіді скасовано.")
 
 # ==================== ВЕБХУК ====================
-@app.route('/')
-def index():
-    return "🤖 Бот працює!"
-
-@app.route('/health')
-def health_check():
-    return {"status": "online", "time": time.ctime()}
-
-@app.route(f'/{TOKEN}', methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        try:
-            json_string = request.get_data().decode('utf-8')
-            update = telebot.types.Update.de_json(json_string)
-            bot.process_new_updates([update])
-            return ''
-        except Exception as e:
-            print(f"❌ Помилка вебхука: {e}")
-            return 'ERROR', 400
-    return 'ERROR', 400
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    print(f"🚀 Запускаю бота на порті {port}")
-    app.run(host='0.0.0.0', port=port) 
+    print("🚀 Запускаю в режимі polling...")
+    bot.remove_webhook()
+    bot.polling(none_stop=True, interval=0)
