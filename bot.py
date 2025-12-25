@@ -276,8 +276,21 @@ def payment_delivery(message):
 """ 
     bot.send_message(message.chat.id, response, parse_mode='Markdown())
 # ==================== ВЕБХУК ====================
+@app.route('/')
+def index():
+    return "🤖 Бот працює!"
+
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return ''
+    return 'ERROR', 400
+
 if __name__ == '__main__':
-    print("🚀 Запускаю в режимі polling...")
-    bot.remove_webhook()
-    bot.polling(none_stop=True, interval=0)
+    port = int(os.environ.get('PORT', 10000))
+    print(f"🚀 Запускаю бота на порті {port}")
+    app.run(host='0.0.0.0', port=port)
 
