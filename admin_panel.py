@@ -3,7 +3,7 @@ from telebot import types
 from telebot.apihelper import ApiTelegramException
 from chat_manager import chat_manager
 from config import is_admin
-from keyboards import admin_main_menu, main_menu  # Додайте імпорт
+from keyboards import admin_main_menu, main_menu  # Важливо: обидві меню
 
 class AdminPanel:
     def __init__(self, bot):
@@ -264,3 +264,4 @@ class AdminPanel:
                             f"Відправити розсилку?",
                             parse_mode='Markdown',
                             reply_markup=markup)
+
