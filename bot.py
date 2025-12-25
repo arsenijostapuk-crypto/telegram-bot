@@ -62,6 +62,12 @@ INFO_TEXT = """
 
 """
 
+# ==================== ДЕБАГОВИЙ ОБРОБНИК ====================
+@bot.message_handler(func=lambda m: True)  # Обробляє всі повідомлення
+def debug_all_messages(message):
+    if message.text and message.text.startswith('/'):
+        print(f"📥 Отримано команду: {message.text} від {message.from_user.id}")
+
 # ==================== КЛІЄНТИ: ГОЛОВНЕ МЕНЮ ====================
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -199,7 +205,7 @@ def process_order(message):
     # Повідомлення клієнту
     bot.send_message(
         chat_id,
-        f"✅ *Повідомлення повідомлення відправлене!*\n\nВаше повідомлення:\n{order_text}\n\nМенеджер зв'яжеться протягом 5-15 хвилин.",
+        f"✅ *Повідомлення відправлене!*\n\nВаше повідомлення:\n{order_text}\n\nМенеджер зв'яжеться протягом 5-15 хвилин.",
         parse_mode='Markdown',
         reply_markup=main_menu()
     )
@@ -209,6 +215,13 @@ def process_order(message):
     
     # Повідомлення адмінам для чату
     notify_admins_about_order(user, order_text)
+
+def notify_admins_about_order(user, order_text):
+    """Сповіщає адмінів про нове замовлення"""
+    # Ця функція була відсутня в оригінальному коді
+    # Додайте логіку для сповіщення адмінів
+    pass
+
 def send_to_admin_group(user, order_text):
     """Відправляє замовлення в групу"""
     try:
@@ -233,14 +246,7 @@ def send_to_admin_group(user, order_text):
         print(f"❌ Помилка відправки в групу: {e}")
 
 # ==================== АДМІНИ ====================
-@bot.message_handler(commands=['admin'])  # <-- ОСЬ ТУТ ПОЧИНАЄТЬСЯ
-def admin_panel(message):
-    user_id = message.from_user.id
-    username = message.from_user.username or "немає"
-    
-    print(f"🛠️ DEBUG /admin: Користувач {user_id} (@{username})")
-    print(f"🛠️ DEBUG /admin: Перевірка is_admin({user_id}) = {is_admin(user_id)}")
-    @bot.message_handler(commands=['admin'])
+@bot.message_handler(commands=['admin'])
 def admin_panel(message):
     user_id = message.from_user.id
     username = message.from_user.username or "немає"
@@ -252,6 +258,7 @@ def admin_panel(message):
     print(f"ADMIN_IDS = {ADMIN_IDS}")
     print(f"Ваш ID у списку адмінів? {user_id in ADMIN_IDS}")
     
+    # Логуємо в файл для надійності
     with open('admin_debug.log', 'a', encoding='utf-8') as f:
         f.write(f"\n[{time.time()}] /admin від {user_id} (@{username})\n")
         f.write(f"  is_admin={is_admin(user_id)}, в списку={user_id in ADMIN_IDS}\n")
@@ -282,7 +289,7 @@ def admin_panel(message):
                     parse_mode='Markdown', 
                     reply_markup=admin_main_menu())
 
-# Наступна функція (вже є у вас)
+# Обробники адмін-меню
 @bot.message_handler(func=lambda m: m.text == "📋 Активні чати")
 def show_active_chats(message):
     if not is_admin(message.from_user.id):
@@ -311,6 +318,59 @@ def show_active_chats(message):
         ))
     
     bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup)
+
+@bot.message_handler(func=lambda m: m.text == "🆕 Нові повідомлення" and is_admin(m.from_user.id))
+def show_new_messages(message):
+    if not is_admin(message.from_user.id):
+        return
+    
+    unread_chats = chat_manager.get_unread_chats()
+    
+    if not unread_chats:
+        bot.send_message(message.chat.id, "✅ Немає нових повідомлень")
+        return
+    
+    text = "🆕 *Непрочитані повідомлення:*\n\n"
+    for user_id, chat in unread_chats.items():
+        text += f"👤 {chat['user_name']}\n"
+        text += f"🆔: `{user_id}`\n"
+        if chat['messages']:
+            last_msg = chat['messages'][-1]['text'][:50]
+            text += f"💬 {last_msg}...\n"
+        text += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+    
+    markup = types.InlineKeyboardMarkup()
+    for user_id in unread_chats.keys():
+        markup.add(types.InlineKeyboardButton(
+            f"📨 Відповісти {user_id[:6]}...", 
+            callback_data=f"reply_{user_id}"
+        ))
+    
+    bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=markup)
+
+@bot.message_handler(func=lambda m: m.text == "📊 Статистика" and is_admin(m.from_user.id))
+def show_statistics(message):
+    if not is_admin(message.from_user.id):
+        return
+    
+    stats = chat_manager.get_user_stats()
+    text = f"""📊 *Статистика бота*
+
+👥 Користувачів всього: *{stats['total']}*
+💬 Активних чатів: *{stats['active']}*
+📝 Зареєстровано: *{stats['registered']}*
+✅ Завершено: *{stats['closed']}*
+🚫 Заблоковано: *{stats['blocked']}*
+🔕 Відписались: *{stats['unsubscribed']}*
+
+📈 *Загальна активність:* {stats['active'] + stats['registered']}/{stats['total']}
+"""
+    
+    bot.send_message(message.chat.id, text, parse_mode='Markdown')
+
+@bot.message_handler(func=lambda m: m.text == "🔙 Головне меню" and is_admin(m.from_user.id))
+def back_to_main_from_admin(message):
+    bot.send_message(message.chat.id, "Головне меню:", reply_markup=main_menu())
 
 @bot.message_handler(func=lambda m: m.text == "💬 Відповісти клієнту")
 def select_client_to_reply(message):
@@ -383,6 +443,7 @@ def start_reply(call):
         reply_markup=cancel_markup
     )
     bot.answer_callback_query(call.id)
+
 # Обробник для скасування режиму відповіді адміна
 @bot.message_handler(commands=['cancel'])
 def cancel_reply_mode(message):
@@ -452,7 +513,7 @@ def send_reply_to_client(message):
         # Не видаляємо admin_reply_mode, щоб адмін міг спробувати ще раз
     except Exception as e:
         bot.send_message(admin_id, f"❌ Невідома помилка: {e}")
-# ОБРОБНИК ДЛЯ КНОПКИ "ЗАВЕРШИТИ" - ЦЕ ГОЛОВНЕ ЩО ПОТРІБНО!
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith('close_'))
 def close_chat(call):
     admin_id = call.from_user.id
@@ -484,7 +545,6 @@ def close_chat(call):
     
     bot.answer_callback_query(call.id, "Чат завершено")
 
-# Обробник для скасування режиму відповіді
 # ==================== РОЗСИЛКА ВСІМ КОРИСТУВАЧАМ ====================
 @bot.message_handler(func=lambda m: m.text == "📢 Розсилка" and is_admin(m.from_user.id))
 def broadcast_menu(message):
@@ -632,173 +692,4 @@ def execute_broadcast(call):
     report += f"• 👥 Загальна кількість: {total_users}\n"
     report += f"• ✅ Успішно доставлено: {successful}\n"
     report += f"• ❌ Не вдалося відправити: {failed}\n"
-    report += f"• 🚫 Заблоковані користувачі: {blocked}\n\n"
-    
-    if successful > 0:
-        report += f"📈 *Ефективність:* {successful/total_users*100:.1f}%\n"
-    
-    report += f"💬 *Текст розсилки був доданий в історію чатів.*"
-    
-    # Додаємо повідомлення в історію чатів
-    for user_id in all_users.keys():
-        if chat_manager.chats.get(user_id):
-            chat_manager.add_message(int(user_id), 
-                                   f"📢 РОЗСИЛКА: {broadcast_text[:100]}...", 
-                                   from_admin=True)
-    
-    bot.send_message(admin_id, report, parse_mode='Markdown', reply_markup=admin_main_menu())
-    bot.answer_callback_query(call.id, "✅ Розсилка завершена!")
-
-@bot.callback_query_handler(func=lambda call: call.data == "edit_broadcast")
-def edit_broadcast_text(call):
-    admin_id = call.from_user.id
-    bot.send_message(admin_id, 
-                    "✏️ *Редагування тексту*\n\n"
-                    "Будь ласка, надішліть новий текст для розсилки:",
-                    parse_mode='Markdown',
-                    reply_markup=types.ForceReply(selective=True))
-    
-    bot.register_next_step_handler_by_chat_id(admin_id, confirm_broadcast)
-    bot.answer_callback_query(call.id, "Напишіть новий текст")
-
-@bot.callback_query_handler(func=lambda call: call.data == "cancel_broadcast")
-def cancel_broadcast(call):
-    admin_id = call.from_user.id
-    
-    # Видаляємо тимчасовий текст
-    if hasattr(bot, 'broadcast_texts'):
-        bot.broadcast_texts.pop(admin_id, None)
-    
-    bot.send_message(admin_id, "❌ Розсилка скасована.", reply_markup=admin_main_menu())
-    bot.answer_callback_query(call.id, "Розсилка скасована")
-
-# Обробник команди /stop для користувачів
-@bot.message_handler(commands=['stop'])
-def handle_stop_command(message):
-    user_id = message.from_user.id
-    
-    bot.send_message(user_id,
-                    "🔕 *Ви відписались від розсилок*\n\n"
-                    "Ви більше не будете отримувати повідомлення про новинки та акції.\n\n"
-                    "Якщо захочете повернутись, просто напишіть /start",
-                    parse_mode='Markdown')
-    
-    # Позначаємо користувача як такого, що відписався
-    if str(user_id) in chat_manager.chats:
-        chat_manager.chats[str(user_id)]["status"] = "unsubscribed"
-        chat_manager.save_chats()
-
-# ШВИДКА КОМАНДА ДЛЯ РОЗСИЛКИ
-@bot.message_handler(commands=['broadcast'])
-def quick_broadcast_command(message):
-    if not is_admin(message.from_user.id):
-        bot.reply_to(message, "⛔ Доступ заборонено")
-        return
-    
-    # Показуємо статистику
-    all_users = chat_manager.get_all_users()
-    
-    markup = types.InlineKeyboardMarkup()
-    markup.add(
-        types.InlineKeyboardButton("📝 Створити розсилку", callback_data="create_broadcast"),
-        types.InlineKeyboardButton("📊 Статистика користувачів", callback_data="user_stats")
-    )
-    
-    bot.send_message(message.chat.id,
-                    f"📢 *Швидка розсилка*\n\n"
-                    f"Зареєстровано користувачів: *{len(all_users)}*\n"
-                    f"Активних чатів: *{len(chat_manager.get_active_chats())}*\n\n"
-                    f"Оберіть дію:",
-                    parse_mode='Markdown',
-                    reply_markup=markup)
-
-@bot.callback_query_handler(func=lambda call: call.data == "create_broadcast")
-def create_broadcast_from_button(call):
-    admin_id = call.from_user.id
-    bot.send_message(admin_id, 
-                    "📝 *Створення розсилки*\n\n"
-                    "Напишіть текст для розсилки всім користувачам:",
-                    parse_mode='Markdown',
-                    reply_markup=types.ForceReply(selective=True))
-    
-    bot.register_next_step_handler_by_chat_id(admin_id, confirm_broadcast)
-    bot.answer_callback_query(call.id)
-
-@bot.callback_query_handler(func=lambda call: call.data == "user_stats")
-def show_user_stats(call):
-    admin_id = call.from_user.id
-    all_users = chat_manager.get_all_users()
-    
-    # Аналізуємо статуси
-    active = 0
-    registered = 0
-    blocked = 0
-    closed = 0
-    unsubscribed = 0
-    
-    for user_data in all_users.values():
-        status = user_data.get('status', 'registered')
-        if status == 'active':
-            active += 1
-        elif status == 'registered':
-            registered += 1
-        elif status == 'blocked':
-            blocked += 1
-        elif status == 'closed':
-            closed += 1
-        elif status == 'unsubscribed':
-            unsubscribed += 1
-    
-    # Отримуємо всіх користувачів (включаючи відписаних)
-    total_all = len(chat_manager.chats)
-    
-    stats_text = f"📊 *Статистика користувачів*\n\n"
-    stats_text += f"• 👥 Всього зареєстровано: {total_all}\n"
-    stats_text += f"• ✅ Для розсилки доступно: {len(all_users)}\n"
-    stats_text += f"• 💬 Активні чати: {active}\n"
-    stats_text += f"• 📝 Зареєстровані: {registered}\n"
-    stats_text += f"• ✅ Завершені чати: {closed}\n"
-    stats_text += f"• 🚫 Заблоковані: {blocked}\n"
-    stats_text += f"• 🔕 Відписались: {unsubscribed}\n\n"
-    
-    if total_all > 0:
-        coverage = len(all_users)/total_all*100
-        stats_text += f"📈 *Охоплення розсилки:* {coverage:.1f}%\n"
-    
-    bot.send_message(admin_id, stats_text, parse_mode='Markdown')
-    bot.answer_callback_query(call.id)
-# ==================== ВЕБХУК ====================
-@app.route('/')
-def index():
-    return "🤖 Бот працює!"
-
-@app.route('/set_webhook')
-def set_webhook():
-    bot.remove_webhook()
-    webhook_url = f"https://kobraua_bot.onrender.com/{TOKEN}"
-    result = bot.set_webhook(webhook_url)
-    return f"✅ Вебхук встановлено на {webhook_url}<br>Результат: {result}"
-
-@app.route(f'/{TOKEN}', methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return ''
-    return 'ERROR', 400
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    print(f"🚀 Запускаю бота на порті {port}")
-    app.run(host='0.0.0.0', port=port)
-
-
-
-
-
-
-
-
-
-
+    report += f"• 🚫 Заблоковані користувачі: {blocked}\n"
