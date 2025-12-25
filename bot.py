@@ -733,4 +733,113 @@ def handle_stop_command(message):
                     "Якщо захочете повернутись, просто напишіть /start",
                     parse_mode='Markdown')
     
-    # Позначаємо
+    # Позначаємо користувача як такого, що відписався
+    if str(user_id) in chat_manager.chats:
+        chat_manager.chats[str(user_id)]["status"] = "unsubscribed"
+        chat_manager.save_chats()
+
+# ШВИДКА КОМАНДА ДЛЯ РОЗСИЛКИ
+@bot.message_handler(commands=['broadcast'])
+def quick_broadcast_command(message):
+    if not is_admin(message.from_user.id):
+        bot.reply_to(message, "⛔ Доступ заборонено")
+        return
+    
+    # Показуємо статистику
+    all_users = chat_manager.get_all_users()
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.add(
+        types.InlineKeyboardButton("📝 Створити розсилку", callback_data="create_broadcast"),
+        types.InlineKeyboardButton("📊 Статистика користувачів", callback_data="user_stats")
+    )
+    
+    bot.send_message(message.chat.id,
+                    f"📢 *Швидка розсилка*\n\n"
+                    f"Зареєстровано користувачів: *{len(all_users)}*\n"
+                    f"Активних чатів: *{len(chat_manager.get_active_chats())}*\n\n"
+                    f"Оберіть дію:",
+                    parse_mode='Markdown',
+                    reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data == "create_broadcast")
+def create_broadcast_from_button(call):
+    admin_id = call.from_user.id
+    bot.send_message(admin_id, 
+                    "📝 *Створення розсилки*\n\n"
+                    "Напишіть текст для розсилки всім користувачам:",
+                    parse_mode='Markdown',
+                    reply_markup=types.ForceReply(selective=True))
+    
+    bot.register_next_step_handler_by_chat_id(admin_id, confirm_broadcast)
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data == "user_stats")
+def show_user_stats(call):
+    admin_id = call.from_user.id
+    all_users = chat_manager.get_all_users()
+    
+    # Аналізуємо статуси
+    active = 0
+    registered = 0
+    blocked = 0
+    closed = 0
+    unsubscribed = 0
+    
+    for user_data in all_users.values():
+        status = user_data.get('status', 'registered')
+        if status == 'active':
+            active += 1
+        elif status == 'registered':
+            registered += 1
+        elif status == 'blocked':
+            blocked += 1
+        elif status == 'closed':
+            closed += 1
+        elif status == 'unsubscribed':
+            unsubscribed += 1
+    
+    # Отримуємо всіх користувачів (включаючи відписаних)
+    total_all = len(chat_manager.chats)
+    
+    stats_text = f"📊 *Статистика користувачів*\n\n"
+    stats_text += f"• 👥 Всього зареєстровано: {total_all}\n"
+    stats_text += f"• ✅ Для розсилки доступно: {len(all_users)}\n"
+    stats_text += f"• 💬 Активні чати: {active}\n"
+    stats_text += f"• 📝 Зареєстровані: {registered}\n"
+    stats_text += f"• ✅ Завершені чати: {closed}\n"
+    stats_text += f"• 🚫 Заблоковані: {blocked}\n"
+    stats_text += f"• 🔕 Відписались: {unsubscribed}\n\n"
+    
+    if total_all > 0:
+        coverage = len(all_users)/total_all*100
+        stats_text += f"📈 *Охоплення розсилки:* {coverage:.1f}%\n"
+    
+    bot.send_message(admin_id, stats_text, parse_mode='Markdown')
+    bot.answer_callback_query(call.id)
+
+# ==================== ВЕБХУК ====================
+@app.route('/')
+def index():
+    return "🤖 Бот працює!"
+
+@app.route('/set_webhook')
+def set_webhook():
+    bot.remove_webhook()
+    webhook_url = f"https://kobraua_bot.onrender.com/{TOKEN}"
+    result = bot.set_webhook(webhook_url)
+    return f"✅ Вебхук встановлено на {webhook_url}<br>Результат: {result}"
+
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return ''
+    return 'ERROR', 400
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    print(f"🚀 Запускаю бота на порті {port}")
+    app.run(host='0.0.0.0', port=port)

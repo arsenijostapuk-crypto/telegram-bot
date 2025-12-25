@@ -68,20 +68,13 @@ def info_menu():
 
 # ==================== АДМІН МЕНЮ ====================
 def admin_main_menu():
-    markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)  # ВИПРАВЛЕНО: types.
     markup.add(
-        KeyboardButton("📋 Активні чати"),
-        KeyboardButton("🆕 Нові повідомлення"),
-        KeyboardButton("💬 Відповісти клієнту"),
-        KeyboardButton("📢 Розсилка"),
-        KeyboardButton("📊 Статистика"),
-        KeyboardButton("🔙 Головне меню")
+        types.KeyboardButton("📋 Активні чати"),  # ВИПРАВЛЕНО: types.
+        types.KeyboardButton("🆕 Нові повідомлення"),
+        types.KeyboardButton("💬 Відповісти клієнту"),
+        types.KeyboardButton("📢 Розсилка"),
+        types.KeyboardButton("📊 Статистика"),
+        types.KeyboardButton("🔙 Головне меню")
     )
     return markup
-
-
-
-
-
-
-
