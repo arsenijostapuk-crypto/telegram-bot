@@ -1,36 +1,80 @@
-import os
-from flask import Flask, request
-import telebot
 from telebot import types
-from products import get_product_response
-from keyboards import (
-    main_menu, assortment_menu, liquids_menu, pods_menu,
-    cartridges_menu, delivery_menu, order_menu, info_menu
-)
-from config import ADMIN_IDS, is_admin
-from chat_manager import chat_manager
-from admin_panel import AdminPanel
 
-ADMIN_GROUP_ID = -1003654920245
+# ==================== ГОЛОВНЕ МЕНЮ ====================
+def main_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = ["🛍️ Асортимент", "💬Написати менеджеру", "ℹ️ Детальніше"]
+    for btn in buttons:
+        markup.add(types.KeyboardButton(btn))
+    return markup
 
-app = Flask(__name__)
+# ==================== МЕНЮ АСОРТИМЕНТУ ====================
+def assortment_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    buttons = ["💧 Рідини", "🔋 Под-системи", "🎯 Картриджі", "Назад ◀️"]
+    for btn in buttons:
+        markup.add(types.KeyboardButton(btn))
+    return markup
 
-# Налаштування
-TOKEN = os.getenv("MY_BOT_TOKEN")
-if not TOKEN:
-    raise ValueError("❌ Токен не знайдено!")
+# ==================== МЕНЮ РІДИН ====================
+def liquids_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    liquids = [
+        "Chaser 10 ml", "Chaser 30 ml for pods", 
+        "Chaser mix 30 ml", "Chaser black 30 ml",
+        "Chaser lux 30 ml", "Chaser black 30 ml 50 mg", 
+        "Назад ◀️"
+    ]
+    for liquid in liquids:
+        markup.add(types.KeyboardButton(liquid))
+    return markup
 
-bot = telebot.TeleBot(TOKEN)
+# ==================== МЕНЮ ПОД-СИСТЕМ ====================
+def pods_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    pods = ["Xlim", "Vaporesso", "Інші бренди", "Назад ◀️"]
+    for pod in pods:
+        markup.add(types.KeyboardButton(pod))
+    return markup
 
-# Ініціалізуємо адмін-панель (ВАЖЛИВО: це має бути ПЕРЕД реєстрацією інших обробників)
-admin_panel = AdminPanel(bot)
-admin_panel.setup_handlers()
+# ==================== МЕНЮ КАРТРИДЖІВ ====================
+def cartridges_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    cartridges = ["Картриджі Xlim", "Картриджі Vaporesso", "Картриджі NeXlim", "Картриджі Ursa V3", "Назад ◀️"]
+    for cartridge in cartridges:
+        markup.add(types.KeyboardButton(cartridge))
+    return markup
 
-# Тексти повідомлень
-WELCOME_TEXT = """
-👋 *Вітаємо в нашому боті!*
-...
-"""
+# ==================== МЕНЮ ДОСТАВКИ ====================
+def delivery_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("Так, зрозуміло ✅"))
+    markup.add(types.KeyboardButton("Назад ◀️"))
+    return markup
 
-# Решта клієнтських обробників залишається як було...
-# ... (ваш поточний клієнтський код)
+# ==================== МЕНЮ ЗАМОВЛЕННЯ ====================
+def order_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("Скасувати надсилання ❌"))
+    return markup
+
+# ==================== ІНФОРМАЦІЙНЕ МЕНЮ ====================
+def info_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("Як замовити?"))
+    markup.add(types.KeyboardButton("Оплата та доставка"))
+    markup.add(types.KeyboardButton("Назад ◀️"))
+    return markup
+
+# ==================== АДМІН МЕНЮ ====================
+def admin_main_menu():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    markup.add(
+        types.KeyboardButton("📋 Активні чати"),
+        types.KeyboardButton("🆕 Нові повідомлення"),
+        types.KeyboardButton("💬 Відповісти клієнту"),
+        types.KeyboardButton("📢 Розсилка"),
+        types.KeyboardButton("📊 Статистика"),
+        types.KeyboardButton("🔙 Головне меню")
+    )
+    return markup
