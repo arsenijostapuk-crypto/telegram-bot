@@ -1,5 +1,19 @@
 from telebot import types
-
+# ==================== КЛІЄНТИ: НАЗАД ====================
+@bot.message_handler(func=lambda m: m.text in ["Назад ◀️", "Так, зрозуміло ✅", 
+                                              "Скасувати надсилання ❌"])
+def handle_back(message):
+    text = message.text
+    chat_id = message.chat.id
+    
+    # Якщо це адмін - не обробляємо тут
+    if is_admin(message.from_user.id):
+        return
+    
+    if text == "Скасувати надсилання ❌":
+        bot.send_message(chat_id, "✅ Надсилання скасоване.", reply_markup=main_menu())
+    else:
+        bot.send_message(chat_id, "Головне меню:", reply_markup=main_menu())
 # ==================== ГОЛОВНЕ МЕНЮ ====================
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -78,3 +92,4 @@ def admin_main_menu():
         types.KeyboardButton("🔙 Головне меню")
     )
     return markup
+
