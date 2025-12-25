@@ -240,6 +240,28 @@ def admin_panel(message):
     
     print(f"🛠️ DEBUG /admin: Користувач {user_id} (@{username})")
     print(f"🛠️ DEBUG /admin: Перевірка is_admin({user_id}) = {is_admin(user_id)}")
+    @bot.message_handler(commands=['admin'])
+def admin_panel(message):
+    user_id = message.from_user.id
+    username = message.from_user.username or "немає"
+    
+    print(f"\n🔴🔴🔴 DEBUG /admin ВИКЛИКАНО 🔴🔴🔴")
+    print(f"Користувач: ID={user_id}, @{username}")
+    print(f"Текст повідомлення: '{message.text}'")
+    print(f"is_admin({user_id}) = {is_admin(user_id)}")
+    print(f"ADMIN_IDS = {ADMIN_IDS}")
+    print(f"Ваш ID у списку адмінів? {user_id in ADMIN_IDS}")
+    
+    with open('admin_debug.log', 'a', encoding='utf-8') as f:
+        f.write(f"\n[{time.time()}] /admin від {user_id} (@{username})\n")
+        f.write(f"  is_admin={is_admin(user_id)}, в списку={user_id in ADMIN_IDS}\n")
+    
+    # Перевірка чи взагалі ця функція викликається
+    bot.send_message(message.chat.id, 
+                    f"🟢 Тестовий відгук від /admin\n"
+                    f"Ваш ID: `{user_id}`\n"
+                    f"Функція викликана!",
+                    parse_mode='Markdown')
     
     if not is_admin(user_id):
         bot.reply_to(message, 
@@ -770,6 +792,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     print(f"🚀 Запускаю бота на порті {port}")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
