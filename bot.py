@@ -41,7 +41,7 @@ WELCOME_TEXT = """
 ORDER_TEXT = """
 📦 *Оформлення замовлення*
 
-Напишіть що вас цікавать
+Напишіть що вас цікавить
 *Приклад повідомлення:*
 "Chaser 30 ml for pods Виноград- 2 шт, Vaporesso XROS 5 - 1 шт, на завтра 14 годину с.Княгининок "
 
@@ -63,7 +63,7 @@ INFO_TEXT = """
 """
 
 # ==================== ДЕБАГОВИЙ ОБРОБНИК ====================
-@bot.message_handler(func=lambda m: True)  # Обробляє всі повідомлення
+@bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
     if message.text and message.text.startswith('/'):
         print(f"📥 Отримано команду: {message.text} від {message.from_user.id}")
@@ -135,8 +135,7 @@ def handle_products(message):
     bot.send_message(chat_id, response, parse_mode='Markdown')
 
 # ==================== КЛІЄНТИ: ІНФОРМАЦІЯ ====================
-@bot.message_handler(func=lambda m: m.text in ["Як замовити?", "Оплата та доставка",
-                                              "Гарантія"])
+@bot.message_handler(func=lambda m: m.text in ["Як замовити?", "Оплата та доставка"])
 def handle_info_menu(message):
     text = message.text
     chat_id = message.chat.id
@@ -212,15 +211,6 @@ def process_order(message):
     
     # Повідомлення в групу
     send_to_admin_group(user, order_text)
-    
-    # Повідомлення адмінам для чату
-    notify_admins_about_order(user, order_text)
-
-def notify_admins_about_order(user, order_text):
-    """Сповіщає адмінів про нове замовлення"""
-    # Ця функція була відсутня в оригінальному коді
-    # Додайте логіку для сповіщення адмінів
-    pass
 
 def send_to_admin_group(user, order_text):
     """Відправляє замовлення в групу"""
@@ -692,4 +682,55 @@ def execute_broadcast(call):
     report += f"• 👥 Загальна кількість: {total_users}\n"
     report += f"• ✅ Успішно доставлено: {successful}\n"
     report += f"• ❌ Не вдалося відправити: {failed}\n"
-    report += f"• 🚫 Заблоковані користувачі: {blocked}\n"
+    report += f"• 🚫 Заблоковані користувачі: {blocked}\n\n"
+    
+    if successful > 0:
+        report += f"📈 *Ефективність:* {successful/total_users*100:.1f}%\n"
+    
+    report += f"💬 *Текст розсилки був доданий в історію чатів.*"
+    
+    # Додаємо повідомлення в історію чатів
+    for user_id in all_users.keys():
+        if chat_manager.chats.get(user_id):
+            chat_manager.add_message(int(user_id), 
+                                   f"📢 РОЗСИЛКА: {broadcast_text[:100]}...", 
+                                   from_admin=True)
+    
+    bot.send_message(admin_id, report, parse_mode='Markdown', reply_markup=admin_main_menu())
+    bot.answer_callback_query(call.id, "✅ Розсилка завершена!")
+
+@bot.callback_query_handler(func=lambda call: call.data == "edit_broadcast")
+def edit_broadcast_text(call):
+    admin_id = call.from_user.id
+    bot.send_message(admin_id, 
+                    "✏️ *Редагування тексту*\n\n"
+                    "Будь ласка, надішліть новий текст для розсилки:",
+                    parse_mode='Markdown',
+                    reply_markup=types.ForceReply(selective=True))
+    
+    bot.register_next_step_handler_by_chat_id(admin_id, confirm_broadcast)
+    bot.answer_callback_query(call.id, "Напишіть новий текст")
+
+@bot.callback_query_handler(func=lambda call: call.data == "cancel_broadcast")
+def cancel_broadcast(call):
+    admin_id = call.from_user.id
+    
+    # Видаляємо тимчасовий текст
+    if hasattr(bot, 'broadcast_texts'):
+        bot.broadcast_texts.pop(admin_id, None)
+    
+    bot.send_message(admin_id, "❌ Розсилка скасована.", reply_markup=admin_main_menu())
+    bot.answer_callback_query(call.id, "Розсилка скасована")
+
+# Обробник команди /stop для користувачів
+@bot.message_handler(commands=['stop'])
+def handle_stop_command(message):
+    user_id = message.from_user.id
+    
+    bot.send_message(user_id,
+                    "🔕 *Ви відписались від розсилок*\n\n"
+                    "Ви більше не будете отримувати повідомлення про новинки та акції.\n\n"
+                    "Якщо захочете повернутись, просто напишіть /start",
+                    parse_mode='Markdown')
+    
+    # Позначаємо
