@@ -5,7 +5,7 @@ import telebot
 from telebot import types
 from products import get_product_response
 from keyboards import (
-    main_menu, assortment_menu, liquids_menu, pods_menu,
+    main_menu, assortment_menu, liquids_menu, pods_menu, delivery_menu,
     cartridges_menu, delivery_menu, order_menu, info_menu
 )
 from config import ADMIN_IDS, is_admin
@@ -217,3 +217,4 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
