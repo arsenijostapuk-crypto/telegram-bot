@@ -1,20 +1,11 @@
 services:
   - type: web
-    name: telegram-bot
+    name: telegram-bot-iss2
     env: python
-    region: frankfurt  # або інший регіон ближче до вас
+    runtime: python
     plan: free
-    buildCommand: |
-      pip install -r requirements.txt
-    startCommand: |
-      python bot.py
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn bot:app
     envVars:
       - key: MY_BOT_TOKEN
-        value: 8504700222:AAHf3WUtUm8PBDySkfDC9Uf2OUhIY52w6kg  # або sync: false для ручного введення
-      - key: PYTHON_VERSION
-        value: 3.11.0
-    autoDeploy: true
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
+        sync: false
