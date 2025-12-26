@@ -13,7 +13,8 @@ from chat_manager import chat_manager
 from admin_panel import AdminPanel
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 ADMIN_GROUP_ID = -1003654920245
 
@@ -82,6 +83,7 @@ def test_command(message):
 
 @bot.message_handler(func=lambda m: m.text == "🛍️ Асортимент")
 def handle_assortment(message):
+    print(f"🔄 Обробка 'Асортимент' від {message.from_user.id}")
     bot.send_message(message.chat.id, "Оберіть категорію товарів:", 
                     reply_markup=assortment_menu())
 
@@ -98,6 +100,8 @@ def handle_info(message):
 # ==================== КАТЕГОРІЇ ТОВАРІВ ====================
 @bot.message_handler(func=lambda m: m.text in ["💧 Рідини", "🔋 Под-системи", "🎯 Картриджі"])
 def handle_categories(message):
+    print(f"🔄 Обробка категорії: {message.text} від {message.from_user.id}")
+    
     text = message.text
     if text == "💧 Рідини":
         bot.send_message(message.chat.id, "Оберіть рідину:", reply_markup=liquids_menu())
@@ -105,7 +109,6 @@ def handle_categories(message):
         bot.send_message(message.chat.id, "Оберіть под-систему:", reply_markup=pods_menu())
     elif text == "🎯 Картриджі":
         bot.send_message(message.chat.id, "Оберіть картриджі:", reply_markup=cartridges_menu())
-
 # ==================== ТОВАРИ ====================
 @bot.message_handler(func=lambda m: m.text in [
     "Chaser 10 ml", "Chaser 30 ml for pods", "Chaser mix 30 ml",
@@ -115,6 +118,7 @@ def handle_categories(message):
     "Картриджі NeXlim", "Картриджі Ursa V3"
 ])
 def handle_products(message):
+    print(f"🔄 Обробка товару: {message.text} від {message.from_user.id}")
     response = get_product_response(message.text)
     bot.send_message(message.chat.id, response, parse_mode='Markdown')
 
@@ -228,5 +232,6 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
