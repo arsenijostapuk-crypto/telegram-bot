@@ -159,21 +159,32 @@ def process_order(message):
         print(f"❌ Помилка відправки в групу: {e}")
 
 # ==================== ВЕБХУК ====================
+# ==================== ВЕБХУК ====================
 @app.route('/')
 def index():
     return "🤖 Бот працює!"
 
-@app.route(f'/{TOKEN}', methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return ''
-    return 'ERROR', 400
+@app.route('/health')
+def health_check():
+    return {
+        "status": "online",
+        "time": time.ctime(),
+        "service": "Telegram Bot",
+        "endpoint": "telegram-bot-iss2.onrender.com"
+    }
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    print(f"🚀 Запускаю бота на порті {port}")
-
-    app.run(host='0.0.0.0', port=port)
+@app.route('/setup')
+def setup_webhook():
+    """Встановлення вебхука вручну"""
+    try:
+        webhook_url = f"https://telegram-bot-iss2.onrender.com/{TOKEN}"
+        bot.remove_webhook()
+        result = bot.set_webhook(url=webhook_url)
+        return f"""
+        <h1>✅ Вебхук встановлено!</h1>
+        <p><strong>URL:</strong> {webhook_url}</p>
+        <p><strong>Результат:</strong> {result}</p>
+        <p><a href="/">На головну</a></p>
+        """
+    except Exception as e:
+        return f"<h1>❌ Помилка: {e}</h1>"
