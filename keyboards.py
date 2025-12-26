@@ -45,13 +45,6 @@ def cartridges_menu():
         markup.add(types.KeyboardButton(cartridge))
     return markup
 
-# ==================== МЕНЮ ДОСТАВКИ ====================
-def delivery_menu():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(types.KeyboardButton("Так, зрозуміло ✅"))
-    markup.add(types.KeyboardButton("Назад ◀️"))
-    return markup
-
 # ==================== МЕНЮ ЗАМОВЛЕННЯ ====================
 def order_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -68,9 +61,9 @@ def info_menu():
 
 # ==================== АДМІН МЕНЮ ====================
 def admin_main_menu():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)  # ВИПРАВЛЕНО: types.
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(
-        types.KeyboardButton("📋 Активні чати"),  # ВИПРАВЛЕНО: types.
+        types.KeyboardButton("📋 Активні чати"),
         types.KeyboardButton("🆕 Нові повідомлення"),
         types.KeyboardButton("💬 Відповісти клієнту"),
         types.KeyboardButton("📢 Розсилка"),
