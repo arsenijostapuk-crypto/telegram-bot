@@ -120,13 +120,21 @@ def handle_products(message):
 def handle_back(message):
     print(f"🎯 КНОПКА 'НАЗАД' НАТИСНУТА від {message.from_user.id}")
     
+    # Очищуємо всі наступні кроки (якщо вони були зареєстровані)
+    try:
+        # Це очистить будь-який зареєстрований наступний крок
+        import telebot
+        bot.clear_step_handler(message)
+    except:
+        pass
+    
     # Просто відправляємо головне меню
     try:
-        bot.send_message(message.chat.id, "Головне меню:", reply_markup=main_menu())
+        bot.send_message(message.chat.id, "🏠 Головне меню:", reply_markup=main_menu())
         print(f"✅ Головне меню відправлено для {message.from_user.id}")
     except Exception as e:
         print(f"❌ Помилка: {e}")
-        bot.send_message(message.chat.id, "🏠 Головне меню")
+        bot.send_message(message.chat.id, "🏠 Головне меню", reply_markup=main_menu())"🏠 Головне меню")
 
 # ==================== ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Як замовити?")
@@ -217,3 +225,4 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
