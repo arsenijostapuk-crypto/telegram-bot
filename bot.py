@@ -1,20 +1,20 @@
 import os
 import time
+import logging
 from flask import Flask, request
 import telebot
 from telebot import types
 from products import get_product_response
 from keyboards import (
     main_menu, assortment_menu, liquids_menu, pods_menu,
-    cartridges_menu, order_menu, info_menu, admin_main_menu
+    cartridges_menu, order_menu, info_menu
 )
 from config import ADMIN_IDS, is_admin
 from chat_manager import chat_manager
 from admin_panel import AdminPanel
 
-import logging
+# Налаштування логування
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 ADMIN_GROUP_ID = -1003654920245
 
@@ -74,6 +74,7 @@ def debug_all_messages(message):
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
+    print(f"🚀 /start від {message.from_user.id}")
     bot.send_message(message.chat.id, WELCOME_TEXT, 
                     parse_mode='Markdown', reply_markup=main_menu())
 
@@ -89,12 +90,14 @@ def handle_assortment(message):
 
 @bot.message_handler(func=lambda m: m.text == "💬Написати менеджеру")
 def handle_order_request(message):
+    print(f"🔄 Обробка 'Написати менеджеру' від {message.from_user.id}")
     bot.send_message(message.chat.id, ORDER_TEXT, 
                     parse_mode='Markdown', reply_markup=order_menu())
     bot.register_next_step_handler(message, process_order)
 
 @bot.message_handler(func=lambda m: m.text == "ℹ️ Детальніше")
 def handle_info(message):
+    print(f"🔄 Обробка 'Детальніше' від {message.from_user.id}")
     bot.send_message(message.chat.id, "Оберіть пункт:", reply_markup=info_menu())
 
 # ==================== КАТЕГОРІЇ ТОВАРІВ ====================
@@ -109,6 +112,7 @@ def handle_categories(message):
         bot.send_message(message.chat.id, "Оберіть под-систему:", reply_markup=pods_menu())
     elif text == "🎯 Картриджі":
         bot.send_message(message.chat.id, "Оберіть картриджі:", reply_markup=cartridges_menu())
+
 # ==================== ТОВАРИ ====================
 @bot.message_handler(func=lambda m: m.text in [
     "Chaser 10 ml", "Chaser 30 ml for pods", "Chaser mix 30 ml",
@@ -134,6 +138,7 @@ def handle_back(message):
     except Exception as e:
         print(f"❌ Помилка: {e}")
         bot.send_message(message.chat.id, "🏠 Головне меню", reply_markup=main_menu())
+
 # ==================== ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Як замовити?")
 def how_to_order(message):
@@ -223,10 +228,3 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
-
-
-
-
-
-
-
