@@ -1,5 +1,5 @@
 import os
-import time 
+import time  # ДОДАЙТЕ ЦЕ!
 from flask import Flask, request
 import telebot
 from telebot import types
@@ -22,6 +22,7 @@ if not TOKEN:
     raise ValueError("❌ Токен не знайдено!")
 
 bot = telebot.TeleBot(TOKEN)
+
 # Автоматично встановлюємо вебхук при запуску
 print("🔄 Встановлюю вебхук...")
 try:
@@ -32,6 +33,7 @@ try:
     print(f"✅ Вебхук встановлено на: {webhook_url}")
 except Exception as e:
     print(f"❌ Помилка встановлення вебхука: {e}")
+
 # Ініціалізуємо адмін-панель
 admin_panel = AdminPanel(bot)
 admin_panel.setup_handlers()  # Реєструємо адмін-обробники
@@ -168,19 +170,59 @@ def process_order(message):
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
 
-# ==================== ВЕБХУК ====================
-# ==================== ВЕБХУК ====================
+# ==================== ДОДАЙТЕ ІНФОРМАЦІЙНІ ОБРОБНИКИ ====================
+@bot.message_handler(func=lambda m: m.text == "Як замовити?")
+def how_to_order(message):
+    response = """
+📝 *ЯК ЗАМОВИТИ:*
+
+1. 🛍️ Натисніть *Асортимент*
+2. 🔍 Оберіть товари
+3. 💬 Натисніть *Написати менеджеру*
+4. 📝 Напишіть що хочете замовити
+5. ⏳ Чекайте відповіді (5-15 хв)
+
+*Приклад:* "Chaser 30 ml Виноград - 2 шт, XROS 5 - 1 шт"
+"""
+    bot.send_message(message.chat.id, response, parse_mode='Markdown')
+
+@bot.message_handler(func=lambda m: m.text == "Оплата та доставка")
+def payment_delivery(message):
+    response = """
+💰 *ОПЛАТА:*
+• Карта 💳 (Monobank, Privat)
+• Готівка при отриманні 💵
+• Накладений платіж 📦
+
+🚚 *ДОСТАВКА:*
+• Нова Пошта (1-3 дні)
+• Самовивіз: Луцьк, Княгининок
+• Від 50 грн, безкоштовно від 1000 грн
+"""
+    bot.send_message(message.chat.id, response, parse_mode='Markdown')
+
+# ==================== ВЕБХУК МАРШРУТИ ====================
 @app.route('/')
 def index():
-    return "🤖 Бот працює!"
+    return """
+    <h1>🤖 Telegram Bot працює!</h1>
+    <p><strong>Статус:</strong> Online ✅</p>
+    <p><strong>Доступні сторінки:</strong></p>
+    <ul>
+        <li><a href="/health">/health</a> - Статус</li>
+        <li><a href="/setup">/setup</a> - Встановити вебхук</li>
+        <li><a href="/webhook_info">/webhook_info</a> - Інформація про вебхук</li>
+    </ul>
+    """
 
 @app.route('/health')
 def health_check():
     return {
         "status": "online",
-        "time": time.ctime(),
         "service": "Telegram Bot",
-        "endpoint": "telegram-bot-iss2.onrender.com"
+        "timestamp": time.time(),
+        "time": time.ctime(),
+        "url": "https://telegram-bot-iss2.onrender.com"
     }
 
 @app.route('/setup')
@@ -189,14 +231,73 @@ def setup_webhook():
     try:
         webhook_url = f"https://telegram-bot-iss2.onrender.com/{TOKEN}"
         bot.remove_webhook()
+        time.sleep(1)
         result = bot.set_webhook(url=webhook_url)
+        
         return f"""
         <h1>✅ Вебхук встановлено!</h1>
         <p><strong>URL:</strong> {webhook_url}</p>
         <p><strong>Результат:</strong> {result}</p>
-        <p><a href="/">На головну</a></p>
+        <p><strong>Наступні кроки:</strong></p>
+        <ol>
+            <li>Перейдіть до бота в Telegram</li>
+            <li>Напишіть <code>/start</code></li>
+            <li>Напишіть <code>/test</code> для перевірки</li>
+        </ol>
+        <p><a href="/">← На головну</a></p>
         """
     except Exception as e:
-        return f"<h1>❌ Помилка: {e}</h1>"
+        return f"""
+        <h1>❌ Помилка!</h1>
+        <p><strong>Помилка:</strong> {e}</p>
+        <p><a href="/">← На головну</a></p>
+        """
 
+@app.route('/webhook_info')
+def webhook_info():
+    """Інформація про вебхук"""
+    try:
+        info = bot.get_webhook_info()
+        return {
+            "webhook_info": {
+                "url": info.url,
+                "has_custom_certificate": info.has_custom_certificate,
+                "pending_update_count": info.pending_update_count,
+                "last_error_date": info.last_error_date,
+                "last_error_message": info.last_error_message,
+                "max_connections": info.max_connections,
+                "allowed_updates": info.allowed_updates
+            }
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
+# ==================== ГЛАВНИЙ ВЕБХУК МАРШРУТ ====================
+@app.route(f'/{TOKEN}', methods=['POST'])
+def webhook():
+    """Обробник вебхука від Telegram"""
+    if request.headers.get('content-type') == 'application/json':
+        try:
+            json_string = request.get_data().decode('utf-8')
+            update = telebot.types.Update.de_json(json_string)
+            bot.process_new_updates([update])
+            return ''
+        except Exception as e:
+            print(f"❌ Помилка обробки вебхука: {e}")
+            return 'ERROR', 400
+    return 'ERROR', 400
+
+# ==================== ЗАПУСК ====================
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    
+    print(f"🚀 Запускаю бота на порті {port}")
+    print(f"🌐 Основна URL: https://telegram-bot-iss2.onrender.com")
+    print(f"🔧 Доступні сторінки:")
+    print(f"   • https://telegram-bot-iss2.onrender.com/")
+    print(f"   • https://telegram-bot-iss2.onrender.com/health")
+    print(f"   • https://telegram-bot-iss2.onrender.com/setup")
+    print(f"   • https://telegram-bot-iss2.onrender.com/webhook_info")
+    print(f"   • https://telegram-bot-iss2.onrender.com/{TOKEN}")
+    
+    app.run(host='0.0.0.0', port=port)
