@@ -296,3 +296,4 @@ class AdminPanel:
                 logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
                 # Детальний текст помилки адміну (можливо приховати для продуктивного середовища)
                 self.bot.send_message(admin_id, f"❌ Помилка при відправці: {e}")
+
