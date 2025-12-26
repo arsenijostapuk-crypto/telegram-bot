@@ -12,6 +12,9 @@ from config import ADMIN_IDS, is_admin
 from chat_manager import chat_manager
 from admin_panel import AdminPanel
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 ADMIN_GROUP_ID = -1003654920245
 
 app = Flask(__name__)
@@ -225,4 +228,5 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
