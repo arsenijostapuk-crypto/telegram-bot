@@ -141,8 +141,7 @@ def handle_back(message):
         print(f"✅ Головне меню відправлено для {message.from_user.id}")
     except Exception as e:
         print(f"❌ Помилка: {e}")
-        bot.send_message(message.chat.id, "🏠 Головне меню", reply_markup=main_menu())"🏠 Головне меню")
-
+        bot.send_message(message.chat.id, "🏠 Головне меню", reply_markup=main_menu())
 # ==================== ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Як замовити?")
 def how_to_order(message):
@@ -232,6 +231,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
