@@ -4,19 +4,9 @@ import logging
 from flask import Flask, request
 import telebot
 from telebot import types
-from products import get_product_response
-from keyboards import (
-    main_menu, assortment_menu, liquids_menu, pods_menu,
-    cartridges_menu, order_menu, info_menu
-)
-from config import ADMIN_IDS, is_admin
-from chat_manager import chat_manager
-from admin_panel import AdminPanel
 
 # Налаштування логування
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
-ADMIN_GROUP_ID = -1003654920245
 
 app = Flask(__name__)
 
@@ -26,6 +16,22 @@ if not TOKEN:
     raise ValueError("❌ Токен не знайдено!")
 
 bot = telebot.TeleBot(TOKEN)
+
+# Імпорти після ініціалізації бота
+try:
+    from products import get_product_response
+    from keyboards import (
+        main_menu, assortment_menu, liquids_menu, pods_menu,
+        cartridges_menu, order_menu, info_menu
+    )
+    from config import ADMIN_IDS, is_admin
+    from chat_manager import chat_manager
+    from admin_panel import AdminPanel
+except ImportError as e:
+    print(f"❌ Помилка імпорту: {e}")
+    raise
+
+ADMIN_GROUP_ID = -1003654920245
 
 # Автоматично встановлюємо вебхук
 print("🔄 Встановлюю вебхук...")
@@ -192,6 +198,7 @@ def process_order(message):
         bot.send_message(ADMIN_GROUP_ID, admin_msg, reply_markup=markup)
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
+
 # ==================== ВЕБХУК МАРШРУТИ ====================
 @app.route('/')
 def index():
@@ -211,7 +218,6 @@ def setup_webhook():
     except Exception as e:
         return f"❌ Помилка: {e}"
 
-# ДОДАЙТЕ ЦІ ТЕСТОВІ МАРШРУТИ:
 @app.route('/test-bot')
 def test_bot():
     try:
@@ -257,6 +263,7 @@ def webhook():
         bot.process_new_updates([update])
         return ''
     return 'ERROR', 400
+
 # ==================== ЗАПУСК ====================
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
@@ -264,4 +271,3 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
-
