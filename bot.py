@@ -21,7 +21,16 @@ if not TOKEN:
     raise ValueError("❌ Токен не знайдено!")
 
 bot = telebot.TeleBot(TOKEN)
-
+# Автоматично встановлюємо вебхук при запуску
+print("🔄 Встановлюю вебхук...")
+try:
+    webhook_url = f"https://telegram-bot-iss2.onrender.com/{TOKEN}"
+    bot.remove_webhook()
+    time.sleep(1)
+    bot.set_webhook(url=webhook_url)
+    print(f"✅ Вебхук встановлено на: {webhook_url}")
+except Exception as e:
+    print(f"❌ Помилка встановлення вебхука: {e}")
 # Ініціалізуємо адмін-панель
 admin_panel = AdminPanel(bot)
 admin_panel.setup_handlers()  # Реєструємо адмін-обробники
@@ -188,3 +197,4 @@ def setup_webhook():
         """
     except Exception as e:
         return f"<h1>❌ Помилка: {e}</h1>"
+
