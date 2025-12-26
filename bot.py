@@ -274,7 +274,7 @@ def payment_delivery(message):
 • Телефон: +380XXXXXXXXX
 • Графік роботи: 10:00-20:00 щоденно
 """ 
-    bot.send_message(message.chat.id, response, parse_mode='Markdown())
+bot.send_message(message.chat.id, response, parse_mode='Markdown')
 # ==================== ВЕБХУК ====================
 @app.route('/')
 def index():
@@ -293,4 +293,5 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     print(f"🚀 Запускаю бота на порті {port}")
     app.run(host='0.0.0.0', port=port)
+
 
