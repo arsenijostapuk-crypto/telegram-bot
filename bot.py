@@ -192,7 +192,6 @@ def process_order(message):
         bot.send_message(ADMIN_GROUP_ID, admin_msg, reply_markup=markup)
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
-
 # ==================== ВЕБХУК МАРШРУТИ ====================
 @app.route('/')
 def index():
@@ -212,6 +211,44 @@ def setup_webhook():
     except Exception as e:
         return f"❌ Помилка: {e}"
 
+# ДОДАЙТЕ ЦІ ТЕСТОВІ МАРШРУТИ:
+@app.route('/test-bot')
+def test_bot():
+    try:
+        bot_info = bot.get_me()
+        return f"✅ Бот активний: {bot_info.first_name} (@{bot_info.username})<br>Token: {TOKEN[:10]}..."
+    except Exception as e:
+        return f"❌ Помилка бота: {e}<br>Token: {TOKEN[:10]}..."
+
+@app.route('/test-webhook')
+def test_webhook():
+    try:
+        webhook_info = bot.get_webhook_info()
+        return f"""
+        <h1>📊 Стан вебхука</h1>
+        <p>URL: {webhook_info.url}</p>
+        <p>Has custom certificate: {webhook_info.has_custom_certificate}</p>
+        <p>Pending update count: {webhook_info.pending_update_count}</p>
+        <p>Last error date: {webhook_info.last_error_date}</p>
+        <p>Last error message: {webhook_info.last_error_message}</p>
+        """
+    except Exception as e:
+        return f"❌ Помилка: {e}"
+
+@app.route('/debug')
+def debug_info():
+    return f"""
+    <h1>🔧 Інформація про бота</h1>
+    <p>🌐 URL: https://telegram-bot-iss2.onrender.com</p>
+    <p>🔑 Token: {TOKEN[:10]}...</p>
+    <p>🕐 Time: {time.ctime()}</p>
+    <p>📊 <a href="/health">Health Check</a></p>
+    <p>⚙️ <a href="/setup">Setup Webhook</a></p>
+    <p>🤖 <a href="/test-bot">Test Bot</a></p>
+    <p>🔗 <a href="/test-webhook">Test Webhook</a></p>
+    """
+
+# Вебхук для Telegram (ЦЕЙ МАРШРУТ МАЄ БУТИ ОСТАННІМ!)
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
     if request.headers.get('content-type') == 'application/json':
@@ -220,7 +257,6 @@ def webhook():
         bot.process_new_updates([update])
         return ''
     return 'ERROR', 400
-
 # ==================== ЗАПУСК ====================
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
@@ -228,3 +264,4 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
