@@ -1,4 +1,5 @@
 import os
+import time 
 from flask import Flask, request
 import telebot
 from telebot import types
@@ -197,4 +198,5 @@ def setup_webhook():
         """
     except Exception as e:
         return f"<h1>❌ Помилка: {e}</h1>"
+
 
