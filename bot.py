@@ -153,6 +153,19 @@ def handle_admin_panel_button(message):
     print(f"👑 Кнопка 'Адмін-панель' від адміна {message.from_user.id}")
     from keyboards import admin_main_menu
     bot.send_message(message.chat.id, "👑 Адмін-панель:", reply_markup=admin_main_menu())
+    # ==================== ОБРОБНИК "📢 РОЗСИЛКА" ====================
+@bot.message_handler(func=lambda m: m.text == "📢 Розсилка" and is_admin(m.from_user.id))
+def handle_broadcast(message):
+    print(f"📢 Кнопка 'Розсилка' від адміна {message.from_user.id}")
+    
+    # Запитуємо текст розсилки
+    msg = bot.send_message(message.chat.id, 
+                          "✍️ *Напишіть повідомлення для розсилки:*\n\n"
+                          "⚠️ _Для скасування напишіть /cancel_",
+                          parse_mode='Markdown')
+    
+    # Реєструємо наступний крок
+    bot.register_next_step_handler(msg, process_broadcast_message)
 # ==================== ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Як замовити?")
 def how_to_order(message):
@@ -285,6 +298,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
