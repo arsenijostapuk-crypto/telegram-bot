@@ -316,6 +316,30 @@ def handle_broadcast_confirmation(call):
         
         # Видаляємо тимчасові дані
         del bot.temp_broadcasts[admin_id]
+        # ==================== ОБРОБНИК ДЛЯ ТЕКСТУ РОЗСИЛКИ ====================
+@bot.message_handler(func=lambda m: True, content_types=['text'])
+def handle_all_text_messages(message):
+    # Перевіряємо, чи це може бути текст для розсилки
+    # (Це тимчасове рішення)
+    
+    # Якщо це адмін і ми очікуємо текст розсилки
+    if is_admin(message.from_user.id):
+        # Можна додати логіку для визначення, чи це текст розсилки
+        print(f"📝 Адмін {message.from_user.id} написав: {message.text[:50]}...")
+        
+        # Тимчасово: відправляємо підтвердження
+        markup = types.InlineKeyboardMarkup()
+        markup.add(
+            types.InlineKeyboardButton("✅ Так, надіслати", callback_data=f"broadcast_confirm_{message.from_user.id}"),
+            types.InlineKeyboardButton("❌ Ні, скасувати", callback_data=f"broadcast_cancel_{message.from_user.id}")
+        )
+        
+        bot.send_message(
+            message.chat.id,
+            f"📋 *Попередній перегляд розсилки:*\n\n{message.text}\n\n*Підтверджуєте розсилку?*",
+            parse_mode='Markdown',
+            reply_markup=markup
+        )
 # ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
 @bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
@@ -394,6 +418,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
