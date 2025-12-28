@@ -219,7 +219,103 @@ def process_order(message):
         bot.send_message(ADMIN_GROUP_ID, admin_msg, reply_markup=markup)
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
+# ==================== РОЗСИЛКА ====================
+def process_broadcast_message(message):
+    # Скасування
+    if message.text == '/cancel':
+        bot.send_message(message.chat.id, "❌ Розсилку скасовано")
+        return
+    
+    admin_id = message.from_user.id
+    broadcast_text = message.text
+    
+    # Підтвердження
+    markup = types.InlineKeyboardMarkup()
+    markup.add(
+        types.InlineKeyboardButton("✅ Так, надіслати", callback_data=f"broadcast_confirm_{admin_id}"),
+        types.InlineKeyboardButton("❌ Ні, скасувати", callback_data=f"broadcast_cancel_{admin_id}")
+    )
+    
+    # Тимчасове зберігання тексту розсилки
+    if not hasattr(bot, 'temp_broadcasts'):
+        bot.temp_broadcasts = {}
+    
+    bot.temp_broadcasts[admin_id] = broadcast_text
+    
+    # Попередній перегляд
+    bot.send_message(
+        message.chat.id,
+        f"📋 *Попередній перегляд розсилки:*\n\n"
+        f"{broadcast_text}\n\n"
+        f"*Підтверджуєте розсилку?*",
+        parse_mode='Markdown',
+        reply_markup=markup
+    )
 
+# ==================== CALLBACK ДЛЯ РОЗСИЛКИ ====================
+@bot.callback_query_handler(func=lambda call: call.data.startswith('broadcast_'))
+def handle_broadcast_confirmation(call):
+    admin_id = call.from_user.id
+    action = call.data.split('_')[1]  # confirm або cancel
+    
+    if action == 'cancel':
+        bot.answer_callback_query(call.id, "❌ Розсилку скасовано")
+        bot.edit_message_text(
+            "❌ Розсилку скасовано",
+            call.message.chat.id,
+            call.message.message_id
+        )
+        if hasattr(bot, 'temp_broadcasts') and admin_id in bot.temp_broadcasts:
+            del bot.temp_broadcasts[admin_id]
+        return
+    
+    # Підтверджено розсилку
+    if action == 'confirm' and hasattr(bot, 'temp_broadcasts') and admin_id in bot.temp_broadcasts:
+        broadcast_text = bot.temp_broadcasts[admin_id]
+        
+        bot.edit_message_text(
+            "🔄 *Розсилка розпочата...*",
+            call.message.chat.id,
+            call.message.message_id,
+            parse_mode='Markdown'
+        )
+        
+        # Отримуємо всіх користувачів
+        users = chat_manager.get_all_users()
+        total_users = len(users)
+        successful = 0
+        failed = 0
+        
+        # Розсилка
+        for user_id_str in users.keys():
+            try:
+                user_id = int(user_id_str)
+                bot.send_message(user_id, f"📢 *Розсилка:*\n\n{broadcast_text}", parse_mode='Markdown')
+                successful += 1
+                time.sleep(0.1)  # Затримка
+            except Exception as e:
+                failed += 1
+                print(f"❌ Помилка відправки {user_id_str}: {e}")
+        
+        # Результат
+        result_text = (
+            f"✅ *Розсилка завершена!*\n\n"
+            f"👥 Загальна кількість: {total_users}\n"
+            f"✅ Успішно: {successful}\n"
+            f"❌ Не вдалося: {failed}"
+        )
+        
+        bot.edit_message_text(
+            result_text,
+            call.message.chat.id,
+            call.message.message_id,
+            parse_mode='Markdown'
+        )
+        
+        bot.answer_callback_query(call.id, "✅ Розсилку завершено")
+        
+        # Видаляємо тимчасові дані
+        del bot.temp_broadcasts[admin_id]
 # ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
 @bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
@@ -298,6 +394,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
