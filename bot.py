@@ -2,7 +2,6 @@ import os
 import time
 import logging
 from flask import Flask, request
-from keyboards import main_menu
 import telebot
 from telebot import types
 
@@ -72,18 +71,11 @@ ORDER_TEXT = """
 """
 
 # ==================== КЛІЄНТСЬКІ ОБРОБНИКИ ====================
-# Це МАЄ БУТИ ПЕРШИМ обробником:
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     print(f"🚀 /start від {message.from_user.id}")
     bot.send_message(message.chat.id, WELCOME_TEXT, 
                     parse_mode='Markdown', reply_markup=main_menu())
-
-# А цей обробник МАЄ БУТИ ПІСЛЯ /start:
-@bot.message_handler(func=lambda m: True)
-def debug_all_messages(message):
-    if message.text:
-        print(f"📥 Повідомлення: '{message.text}' від {message.from_user.id}")
 
 @bot.message_handler(commands=['test', 'ping'])
 def test_command(message):
@@ -200,6 +192,12 @@ def process_order(message):
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
 
+# ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
+@bot.message_handler(func=lambda m: True)
+def debug_all_messages(message):
+    if message.text:
+        print(f"📥 Повідомлення: '{message.text}' від {message.from_user.id}")
+
 # ==================== ВЕБХУК МАРШРУТИ ====================
 @app.route('/')
 def index():
@@ -272,6 +270,3 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
-
-
-
