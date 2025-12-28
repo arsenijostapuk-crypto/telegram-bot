@@ -137,17 +137,8 @@ def handle_back(message):
     except Exception as e:
         print(f"❌ Помилка: {e}")
         bot.send_message(message.chat.id, "🏠 Головне меню", reply_markup=main_menu())
-# Додайте цей обробник після обробника "Назад ◀️"
-@bot.message_handler(func=lambda m: m.text == "🔙 Головне меню")
-def handle_admin_back(message):
-    print(f"🎯 Кнопка '🔙 Головне меню' від {message.from_user.id}")
-    
-    # Для звичайних користувачів - головне меню
-    if not is_admin(message.from_user.id):
-        bot.send_message(message.chat.id, "🏠 Головне меню:", reply_markup=main_menu())
-        return
-    
-  # Додайте цей обробник після обробника "Назад ◀️"
+
+# ==================== ОБРОБНИК "🔙 ГОЛОВНЕ МЕНЮ" ====================
 @bot.message_handler(func=lambda m: m.text == "🔙 Головне меню")
 def handle_admin_back(message):
     print(f"🎯 Кнопка '🔙 Головне меню' від {message.from_user.id}")
@@ -155,6 +146,13 @@ def handle_admin_back(message):
     # Завжди повертаємо до головного меню (WELCOME_TEXT)
     bot.send_message(message.chat.id, WELCOME_TEXT, 
                     parse_mode='Markdown', reply_markup=main_menu())
+
+# ==================== ОБРОБНИК "👑 АДМІН-ПАНЕЛЬ" (тільки для адмінів) ====================
+@bot.message_handler(func=lambda m: m.text == "👑 Адмін-панель" and is_admin(m.from_user.id))
+def handle_admin_panel_button(message):
+    print(f"👑 Кнопка 'Адмін-панель' від адміна {message.from_user.id}")
+    from keyboards import admin_main_menu
+    bot.send_message(message.chat.id, "👑 Адмін-панель:", reply_markup=admin_main_menu())
 # ==================== ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Як замовити?")
 def how_to_order(message):
@@ -287,6 +285,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
