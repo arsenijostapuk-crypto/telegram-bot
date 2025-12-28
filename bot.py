@@ -71,13 +71,6 @@ ORDER_TEXT = """
 """
 
 # ==================== КЛІЄНТСЬКІ ОБРОБНИКИ ====================
-
-# ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ
-@bot.message_handler(func=lambda m: True)
-def debug_all_messages(message):
-    if message.text:
-        print(f"📥 Повідомлення: '{message.text}' від {message.from_user.id}")
-
 # Це МАЄ БУТИ ПЕРШИМ обробником:
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -278,4 +271,5 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
