@@ -17,6 +17,9 @@ if not TOKEN:
 
 bot = telebot.TeleBot(TOKEN)
 
+# Змінна для відстеження очікування тексту розсилки
+broadcast_waiting = {}
+
 # Імпорти після ініціалізації бота
 try:
     from products import get_product_response
@@ -153,19 +156,55 @@ def handle_admin_panel_button(message):
     print(f"👑 Кнопка 'Адмін-панель' від адміна {message.from_user.id}")
     from keyboards import admin_main_menu
     bot.send_message(message.chat.id, "👑 Адмін-панель:", reply_markup=admin_main_menu())
-    # ==================== ОБРОБНИК "📢 РОЗСИЛКА" ====================
+
+# ==================== ОБРОБНИК "📢 РОЗСИЛКА" ====================
 @bot.message_handler(func=lambda m: m.text == "📢 Розсилка" and is_admin(m.from_user.id))
 def handle_broadcast(message):
     print(f"📢 Кнопка 'Розсилка' від адміна {message.from_user.id}")
     
-    # Запитуємо текст розсилки
-    msg = bot.send_message(message.chat.id, 
-                          "✍️ *Напишіть повідомлення для розсилки:*\n\n"
-                          "⚠️ _Для скасування напишіть /cancel_",
-                          parse_mode='Markdown')
+    # Позначаємо, що очікуємо текст від цього адміна
+    broadcast_waiting[message.from_user.id] = True
     
-    # Реєструємо наступний крок
-    bot.register_next_step_handler(msg, process_broadcast_message)
+    bot.send_message(message.chat.id, 
+                     "✍️ *Напишіть повідомлення для розсилки:*\n\n"
+                     "⚠️ _Для скасування напишіть /cancel_",
+                     parse_mode='Markdown')
+
+# ==================== ОБРОБНИК ТЕКСТУ РОЗСИЛКИ ====================
+@bot.message_handler(func=lambda m: is_admin(m.from_user.id) and broadcast_waiting.get(m.from_user.id, False))
+def handle_broadcast_text_input(message):
+    print(f"📝 Адмін {message.from_user.id} ввів текст для розсилки")
+    
+    # Знімаємо прапор очікування
+    broadcast_waiting[message.from_user.id] = False
+    
+    # Обробка тексту розсилки
+    if message.text == '/cancel':
+        bot.send_message(message.chat.id, "❌ Розсилку скасовано")
+        return
+    
+    admin_id = message.from_user.id
+    broadcast_text = message.text
+    
+    # Підтвердження
+    markup = types.InlineKeyboardMarkup()
+    markup.add(
+        types.InlineKeyboardButton("✅ Так, надіслати", callback_data=f"broadcast_confirm_{admin_id}"),
+        types.InlineKeyboardButton("❌ Ні, скасувати", callback_data=f"broadcast_cancel_{admin_id}")
+    )
+    
+    bot.send_message(
+        message.chat.id,
+        f"📋 *Попередній перегляд розсилки:*\n\n{broadcast_text}\n\n*Підтверджуєте розсилку?*",
+        parse_mode='Markdown',
+        reply_markup=markup
+    )
+    
+    # Зберігаємо текст
+    if not hasattr(bot, 'temp_broadcasts'):
+        bot.temp_broadcasts = {}
+    bot.temp_broadcasts[admin_id] = broadcast_text
+
 # ==================== ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Як замовити?")
 def how_to_order(message):
@@ -219,38 +258,6 @@ def process_order(message):
         bot.send_message(ADMIN_GROUP_ID, admin_msg, reply_markup=markup)
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
-# ==================== РОЗСИЛКА ====================
-def process_broadcast_message(message):
-    # Скасування
-    if message.text == '/cancel':
-        bot.send_message(message.chat.id, "❌ Розсилку скасовано")
-        return
-    
-    admin_id = message.from_user.id
-    broadcast_text = message.text
-    
-    # Підтвердження
-    markup = types.InlineKeyboardMarkup()
-    markup.add(
-        types.InlineKeyboardButton("✅ Так, надіслати", callback_data=f"broadcast_confirm_{admin_id}"),
-        types.InlineKeyboardButton("❌ Ні, скасувати", callback_data=f"broadcast_cancel_{admin_id}")
-    )
-    
-    # Тимчасове зберігання тексту розсилки
-    if not hasattr(bot, 'temp_broadcasts'):
-        bot.temp_broadcasts = {}
-    
-    bot.temp_broadcasts[admin_id] = broadcast_text
-    
-    # Попередній перегляд
-    bot.send_message(
-        message.chat.id,
-        f"📋 *Попередній перегляд розсилки:*\n\n"
-        f"{broadcast_text}\n\n"
-        f"*Підтверджуєте розсилку?*",
-        parse_mode='Markdown',
-        reply_markup=markup
-    )
 
 # ==================== CALLBACK ДЛЯ РОЗСИЛКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('broadcast_'))
@@ -292,7 +299,7 @@ def handle_broadcast_confirmation(call):
                 user_id = int(user_id_str)
                 bot.send_message(user_id, f"📢 *Розсилка:*\n\n{broadcast_text}", parse_mode='Markdown')
                 successful += 1
-                time.sleep(0.1)  # Затримка
+                time.sleep(0.05)  # Невелика затримка
             except Exception as e:
                 failed += 1
                 print(f"❌ Помилка відправки {user_id_str}: {e}")
@@ -316,30 +323,7 @@ def handle_broadcast_confirmation(call):
         
         # Видаляємо тимчасові дані
         del bot.temp_broadcasts[admin_id]
-        # ==================== ОБРОБНИК ДЛЯ ТЕКСТУ РОЗСИЛКИ ====================
-@bot.message_handler(func=lambda m: True, content_types=['text'])
-def handle_all_text_messages(message):
-    # Перевіряємо, чи це може бути текст для розсилки
-    # (Це тимчасове рішення)
-    
-    # Якщо це адмін і ми очікуємо текст розсилки
-    if is_admin(message.from_user.id):
-        # Можна додати логіку для визначення, чи це текст розсилки
-        print(f"📝 Адмін {message.from_user.id} написав: {message.text[:50]}...")
-        
-        # Тимчасово: відправляємо підтвердження
-        markup = types.InlineKeyboardMarkup()
-        markup.add(
-            types.InlineKeyboardButton("✅ Так, надіслати", callback_data=f"broadcast_confirm_{message.from_user.id}"),
-            types.InlineKeyboardButton("❌ Ні, скасувати", callback_data=f"broadcast_cancel_{message.from_user.id}")
-        )
-        
-        bot.send_message(
-            message.chat.id,
-            f"📋 *Попередній перегляд розсилки:*\n\n{message.text}\n\n*Підтверджуєте розсилку?*",
-            parse_mode='Markdown',
-            reply_markup=markup
-        )
+
 # ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
 @bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
@@ -418,11 +402,3 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
-
-
-
-
-
-
-
-
