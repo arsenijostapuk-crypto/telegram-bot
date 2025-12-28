@@ -78,11 +78,18 @@ def debug_all_messages(message):
     if message.text:
         print(f"📥 Повідомлення: '{message.text}' від {message.from_user.id}")
 
+# Це МАЄ БУТИ ПЕРШИМ обробником:
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     print(f"🚀 /start від {message.from_user.id}")
     bot.send_message(message.chat.id, WELCOME_TEXT, 
                     parse_mode='Markdown', reply_markup=main_menu())
+
+# А цей обробник МАЄ БУТИ ПІСЛЯ /start:
+@bot.message_handler(func=lambda m: True)
+def debug_all_messages(message):
+    if message.text:
+        print(f"📥 Повідомлення: '{message.text}' від {message.from_user.id}")
 
 @bot.message_handler(commands=['test', 'ping'])
 def test_command(message):
@@ -271,3 +278,4 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
