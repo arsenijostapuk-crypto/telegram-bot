@@ -150,6 +150,19 @@ def handle_admin_back(message):
     # Для адмінів - адмін-меню
     from keyboards import admin_main_menu
     bot.send_message(message.chat.id, "👑 Адмін-панель:", reply_markup=admin_main_menu())
+    # Додайте цей обробник після обробника "Назад ◀️"
+@bot.message_handler(func=lambda m: m.text == "🔙 Головне меню")
+def handle_admin_back(message):
+    print(f"🎯 Кнопка '🔙 Головне меню' від {message.from_user.id}")
+    
+    # Для звичайних користувачів - головне меню
+    if not is_admin(message.from_user.id):
+        bot.send_message(message.chat.id, "🏠 Головне меню:", reply_markup=main_menu())
+        return
+    
+    # Для адмінів - адмін-меню
+    from keyboards import admin_main_menu
+    bot.send_message(message.chat.id, "👑 Адмін-панель:", reply_markup=admin_main_menu())
 # ==================== ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Як замовити?")
 def how_to_order(message):
@@ -282,4 +295,5 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
