@@ -2,6 +2,7 @@ import os
 import time
 import logging
 from flask import Flask, request
+from keyboards import main_menu
 import telebot
 from telebot import types
 
@@ -271,5 +272,6 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
