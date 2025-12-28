@@ -1,6 +1,6 @@
 from telebot import types
 
-# ==================== ГОЛОВНЕ МЕНЮ ====================
+# ==================== ГОЛОВНЕ МЕНЮ (для всіх користувачів) ====================
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     buttons = ["🛍️ Асортимент", "💬Написати менеджеру", "ℹ️ Детальніше"]
@@ -59,7 +59,7 @@ def info_menu():
     markup.add(types.KeyboardButton("Назад ◀️"))
     return markup
 
-# ==================== АДМІН МЕНЮ ====================
+# ==================== АДМІН МЕНЮ (тільки для адмінів) ====================
 def admin_main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     markup.add(
