@@ -93,7 +93,7 @@ def get_liquid_response(product_name):
     
     elif product_name == "Chaser My Mint":
         return """
-🏷️ *Chaser black 30 ml 50 mg*
+🏷️ *Chaser My Mint*
 
 💧 Об'єм: 30 мл
 ⚡ Міцність: 50 мг (потужно!)
@@ -295,5 +295,6 @@ def get_product_response(product_name):
 Для замовлення натисніть 📦 Замовлення
 
 """
+
 
 
