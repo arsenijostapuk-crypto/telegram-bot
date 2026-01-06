@@ -36,6 +36,9 @@ except ImportError as e:
 
 ADMIN_GROUP_ID = -1003654920245
 
+# Передаємо chat_manager в admin_panel
+set_chat_manager(chat_manager)
+
 # Автоматично встановлюємо вебхук
 print("🔄 Встановлюю вебхук...")
 try:
@@ -50,6 +53,7 @@ except Exception as e:
 # Ініціалізуємо адмін-панель
 admin_panel = AdminPanel(bot)
 admin_panel.setup_handlers()
+
 
 # Тексти
 WELCOME_TEXT = """
@@ -504,6 +508,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
