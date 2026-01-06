@@ -1,9 +1,7 @@
 import json
 import os
 from datetime import datetime
-def get_chat(self, user_id):
-    """Отримати чат за user_id"""
-    return self.chats.get(str(user_id))
+
 class ChatManager:
     def __init__(self, filename='chats.json'):
         self.filename = filename
@@ -18,6 +16,12 @@ class ChatManager:
     def save_chats(self):
         with open(self.filename, 'w', encoding='utf-8') as f:
             json.dump(self.chats, f, ensure_ascii=False, indent=2)
+    
+    # ==================== ОСНОВНІ МЕТОДИ ====================
+    
+    def get_chat(self, user_id):
+        """Отримати чат за user_id"""
+        return self.chats.get(str(user_id))
     
     def start_chat(self, user_id, user_name, username):
         if str(user_id) not in self.chats:
@@ -55,6 +59,8 @@ class ChatManager:
         self.chats[str(user_id)]["status"] = "active"
         self.save_chats()
         return True
+    
+    # ==================== МЕТОДИ ПОШУКУ ====================
     
     def get_active_chats(self):
         return {uid: chat for uid, chat in self.chats.items() 
@@ -96,4 +102,5 @@ class ChatManager:
         return stats
 
 
+# Глобальний екземпляр
 chat_manager = ChatManager()
