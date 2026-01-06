@@ -1,7 +1,9 @@
 import json
 import os
 from datetime import datetime
-
+def get_chat(self, user_id):
+    """Отримати чат за user_id"""
+    return self.chats.get(str(user_id))
 class ChatManager:
     def __init__(self, filename='chats.json'):
         self.filename = filename
@@ -92,5 +94,6 @@ class ChatManager:
                 stats['closed'] += 1
         
         return stats
+
 
 chat_manager = ChatManager()
