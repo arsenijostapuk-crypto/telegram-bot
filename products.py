@@ -91,7 +91,7 @@ def get_liquid_response(product_name):
 Ексклюзивні поєднання, розкішний смак.
 """
     
-    elif product_name == "Chaser black 30 ml 50 mg":
+    elif product_name == ""Chaser My Mint 50/65 mg"":
         return """
 🏷️ *Chaser black 30 ml 50 mg*
 
@@ -293,4 +293,5 @@ def get_product_response(product_name):
 ⭐ Рейтинг: 4.5/5
 
 Для замовлення натисніть 📦 Замовлення
+
 """
