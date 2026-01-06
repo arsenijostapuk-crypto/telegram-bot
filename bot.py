@@ -118,7 +118,7 @@ def handle_categories(message):
 # ==================== ТОВАРИ ====================
 @bot.message_handler(func=lambda m: m.text in [
     "Chaser 10 ml", "Chaser 30 ml for pods", "Chaser mix 30 ml",
-    "Chaser black 30 ml", "Chaser My Mint", "Chaser lux 30 ml",
+    "Chaser black 30 ml", "Chaser My Mint 30 ml", "Chaser lux 30 ml",
     "Xlim", "Vaporesso", "Інші бренди",
     "Картриджі Xlim", "Картриджі Vaporesso",
     "Картриджі NeXlim", "Картриджі Ursa V3"
@@ -402,5 +402,6 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
