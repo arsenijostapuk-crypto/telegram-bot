@@ -91,7 +91,7 @@ def get_liquid_response(product_name):
 Ексклюзивні поєднання, розкішний смак.
 """
     
-    elif product_name == "Chaser My Mint":
+    elif product_name == "Chaser My Mint 30 ml":
         return """
 🏷️ *Chaser My Mint*
 
@@ -295,6 +295,7 @@ def get_product_response(product_name):
 Для замовлення натисніть 📦 Замовлення
 
 """
+
 
 
 
