@@ -4,7 +4,12 @@ from telebot import types
 from config import is_admin
 
 logger = logging.getLogger(__name__)
+# Глобальна змінна для chat_manager
+chat_manager = None
 
+def set_chat_manager(cm):
+    global chat_manager
+    chat_manager = cm
 class AdminPanel:
     def __init__(self, bot):
         self.bot = bot
@@ -300,5 +305,6 @@ def send_reply_to_client(message):
     except Exception as e:
         logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
         self.bot.send_message(admin_id, f"❌ Помилка при відправці: {e}")
+
 
 
