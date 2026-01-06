@@ -9,7 +9,6 @@ from telebot import types
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
-
 # Налаштування
 TOKEN = os.getenv("MY_BOT_TOKEN")
 if not TOKEN:
@@ -17,6 +16,7 @@ if not TOKEN:
 
 bot = telebot.TeleBot(TOKEN)
 
+user_reply_mode = {}
 # Змінна для відстеження очікування тексту розсилки
 broadcast_waiting = {}
 
@@ -133,14 +133,25 @@ def handle_products(message):
 def handle_back(message):
     print(f"🎯 КНОПКА 'НАЗАД' НАТИСНУТА від {message.from_user.id}")
     
-    # Просто відправляємо головне меню
-    try:
+    # Перевіряємо, чи користувач у активному чаті
+    user_chat = chat_manager.get_chat(message.from_user.id)
+    
+    if user_chat and user_chat.get('status') == 'active':
+        # Якщо активний чат, пропонуємо завершити спілкування
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(types.KeyboardButton("Завершити спілкування ✅"))
+        markup.add(types.KeyboardButton("Назад ◀️"))
+        
+        bot.send_message(
+            message.chat.id,
+            "💬 *Ви в активному спілкуванні з менеджером*\n\n"
+            "Якщо хочете повернутися до головного меню, завершіть спілкування.",
+            parse_mode='Markdown',
+            reply_markup=markup
+        )
+    else:
+        # Якщо немає активного чату, повертаємо до головного меню
         bot.send_message(message.chat.id, "🏠 Головне меню:", reply_markup=main_menu())
-        print(f"✅ Головне меню відправлено для {message.from_user.id}")
-    except Exception as e:
-        print(f"❌ Помилка: {e}")
-        bot.send_message(message.chat.id, "🏠 Головне меню", reply_markup=main_menu())
-
 # ==================== ОБРОБНИК "🔙 ГОЛОВНЕ МЕНЮ" ====================
 @bot.message_handler(func=lambda m: m.text == "🔙 Головне меню")
 def handle_admin_back(message):
@@ -169,7 +180,98 @@ def handle_broadcast(message):
                      "✍️ *Напишіть повідомлення для розсилки:*\n\n"
                      "⚠️ _Для скасування напишіть /cancel_",
                      parse_mode='Markdown')
-
+# ==================== ОБРОБКА ВІДПОВІДЕЙ КЛІЄНТА ====================
+@bot.message_handler(func=lambda m: str(m.from_user.id) in chat_manager.chats and 
+                    chat_manager.chats[str(m.from_user.id)].get('status') == 'active' and
+                    m.text not in ["Скасувати надсилання ❌", "Назад ◀️", "Завершити спілкування ✅"])
+def handle_client_reply(message):
+    """Обробка відповіді клієнта після відповіді менеджера"""
+    user_id = message.from_user.id
+    user_chat = chat_manager.get_chat(user_id)
+    
+    if not user_chat or user_chat.get('status') != 'active':
+        return
+    
+    # Якщо це команда /cancel, виходимо з режиму відповіді
+    if message.text == '/cancel':
+        if user_id in user_reply_mode:
+            del user_reply_mode[user_id]
+        bot.send_message(user_id, "❌ Відповідь скасована.", reply_markup=main_menu())
+        return
+    
+    # Додаємо повідомлення від клієнта
+    chat_manager.add_message(user_id, message.text, from_admin=False)
+    
+    # Відправляємо в адмін-групу
+    try:
+        admin_msg = (
+            f"💬 *ВІДПОВІДЬ ВІД КЛІЄНТА*\n\n"
+            f"👤 {message.from_user.first_name}\n"
+            f"🆔 ID: `{user_id}`\n"
+            f"📝 {message.text}"
+        )
+        
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            types.InlineKeyboardButton("💬 Відповісти", callback_data=f"reply_{user_id}"),
+            types.InlineKeyboardButton("✅ Завершити", callback_data=f"close_{user_id}")
+        )
+        
+        bot.send_message(ADMIN_GROUP_ID, admin_msg, parse_mode='Markdown', reply_markup=markup)
+        
+        # Підтвердження клієнту
+        bot.send_message(
+            user_id,
+            "✅ *Повідомлення відправлено менеджеру!*",
+            parse_mode='Markdown'
+        )
+        
+        # Показуємо, що можна продовжувати спілкування
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add(types.KeyboardButton("Завершити спілкування ✅"))
+        
+        bot.send_message(
+            user_id,
+            "💬 *Ви можете продовжувати спілкування*\n\n"
+            "Напишіть ще повідомлення або натисніть 'Завершити спілкування ✅'",
+            parse_mode='Markdown',
+            reply_markup=markup
+        )
+        
+    except Exception as e:
+        print(f"❌ Помилка при відправці відповіді клієнта: {e}")
+        bot.send_message(user_id, "❌ Помилка відправки. Спробуйте ще раз.")
+        # ==================== ЗАВЕРШЕННЯ СПІЛКУВАННЯ ====================
+@bot.message_handler(func=lambda m: m.text == "Завершити спілкування ✅")
+def handle_end_conversation(message):
+    """Клієнт завершує спілкування"""
+    user_id = message.from_user.id
+    user_chat = chat_manager.get_chat(user_id)
+    
+    if user_chat:
+        user_chat['status'] = 'closed'
+        user_chat['unread'] = False
+        chat_manager.save_chats()
+    
+    # Повідомляємо адмінів
+    try:
+        bot.send_message(
+            ADMIN_GROUP_ID,
+            f"✅ *Клієнт завершив спілкування*\n\n"
+            f"👤 {message.from_user.first_name}\n"
+            f"🆔 ID: `{user_id}`",
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        print(f"❌ Помилка при відправці в адмін-групу: {e}")
+    
+    # Повертаємо головне меню клієнту
+    bot.send_message(
+        user_id,
+        "✅ *Спілкування завершено*\n\nДякуємо за звернення! 🛍️",
+        parse_mode='Markdown',
+        reply_markup=main_menu()
+    )
 # ==================== ОБРОБНИК ТЕКСТУ РОЗСИЛКИ ====================
 @bot.message_handler(func=lambda m: is_admin(m.from_user.id) and broadcast_waiting.get(m.from_user.id, False))
 def handle_broadcast_text_input(message):
@@ -402,6 +504,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
