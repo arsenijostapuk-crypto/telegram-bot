@@ -11,13 +11,15 @@ class AdminPanel:
         self.admin_reply_mode = {}  # maps admin_id (int) -> user_id (int or str)
         self._handlers_registered = False
 
-    def setup_handlers(self):
-        """Реєстрація всіх адмін-обробників (ігнорується, якщо вже зареєстровано)"""
-        if self._handlers_registered:
-            logger.debug("Admin handlers already registered, skipping re-registration.")
-            return
-        self._handlers_registered = True
-
+   def setup_handlers(self):
+    """Реєстрація всіх адмін-обробників (ігнорується, якщо вже зареєстровано)"""
+    if self._handlers_registered:
+        logger.debug("Admin handlers already registered, skipping re-registration.")
+        return
+    self._handlers_registered = True
+    
+    # ДОДАЙТЕ ІМПОРТ ТУТ:
+    from chat_manager import chat_manag
         # ==================== АДМІН КОМАНДА ====================
         @self.bot.message_handler(commands=['admin'])
         def admin_panel(message):
@@ -298,4 +300,5 @@ def send_reply_to_client(message):
     except Exception as e:
         logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
         self.bot.send_message(admin_id, f"❌ Помилка при відправці: {e}")
+
 
