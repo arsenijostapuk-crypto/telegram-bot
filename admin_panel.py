@@ -4,27 +4,28 @@ from telebot import types
 from config import is_admin
 
 logger = logging.getLogger(__name__)
+
 # Глобальна змінна для chat_manager
 chat_manager = None
 
 def set_chat_manager(cm):
+    """Функція для встановлення chat_manager ззовні"""
     global chat_manager
     chat_manager = cm
+
 class AdminPanel:
     def __init__(self, bot):
         self.bot = bot
         self.admin_reply_mode = {}  # maps admin_id (int) -> user_id (int or str)
         self._handlers_registered = False
 
-   def setup_handlers(self):
-    """Реєстрація всіх адмін-обробників (ігнорується, якщо вже зареєстровано)"""
-    if self._handlers_registered:
-        logger.debug("Admin handlers already registered, skipping re-registration.")
-        return
-    self._handlers_registered = True
-    
-    # ДОДАЙТЕ ІМПОРТ ТУТ:
-    from chat_manager import chat_manag
+    def setup_handlers(self):
+        """Реєстрація всіх адмін-обробників (ігнорується, якщо вже зареєстровано)"""
+        if self._handlers_registered:
+            logger.debug("Admin handlers already registered, skipping re-registration.")
+            return
+        self._handlers_registered = True
+
         # ==================== АДМІН КОМАНДА ====================
         @self.bot.message_handler(commands=['admin'])
         def admin_panel(message):
@@ -59,6 +60,7 @@ class AdminPanel:
             if not is_admin(message.from_user.id):
                 return
 
+            # Тепер chat_manager доступний як глобальна змінна
             unread_chats = chat_manager.get_unread_chats()
 
             if not unread_chats:
@@ -244,67 +246,61 @@ class AdminPanel:
             else:
                 self.bot.send_message(message.chat.id, "ℹ️ Ви не в режимі відповіді.")
 
-       @bot.message_handler(func=lambda m: m.from_user and m.from_user.id in self.admin_reply_mode)
-def send_reply_to_client(message):
-    admin_id = message.from_user.id
-    user_id = self.admin_reply_mode.get(admin_id)
-    
-    if not user_id:
-        return
-    
-    text = message.text or ""
-    
-    if text.strip() == '/cancel':
-        if admin_id in self.admin_reply_mode:
-            del self.admin_reply_mode[admin_id]
-            remove_markup = types.ReplyKeyboardRemove()
-            self.bot.send_message(admin_id, "❌ Режим відповіді скасовано.", reply_markup=remove_markup)
-        return
-    
-    if not text or text.startswith('/'):
-        return
-    
-    try:
-        # Відправляємо клієнту
-        self.bot.send_message(
-            user_id,
-            f"📨 *Від менеджера:*\n\n{text}",
-            parse_mode='Markdown'
-        )
-        
-        # Зберігаємо в історію
-        try:
-            chat_manager.add_message(user_id, text, from_admin=True)
-        except Exception:
-            chat_manager.add_message(str(user_id), text, from_admin=True)
-        
-        # Підтвердження адміну
-        self.bot.send_message(admin_id, f"✅ Відповідь надіслана клієнту {user_id}")
-        
-        # Прибираємо спеціальну клавіатуру
-        remove_markup = types.ReplyKeyboardRemove()
-        self.bot.send_message(admin_id, "✅ Режим відповіді завершено.", reply_markup=remove_markup)
-        
-        # Виходимо з режиму відповіді
-        if admin_id in self.admin_reply_mode:
-            del self.admin_reply_mode[admin_id]
-            
-        # ПОВІДОМЛЯЄМО КЛІЄНТА, ЩО ВІН МОЖЕ ВІДПОВІСТИ
-        from keyboards import main_menu
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add(types.KeyboardButton("Завершити спілкування ✅"))
-        
-        self.bot.send_message(
-            user_id,
-            "💬 *Ви можете відповісти менеджеру*\n\n"
-            "Просто напишіть ваше повідомлення нижче або натисніть 'Завершити спілкування ✅'",
-            parse_mode='Markdown',
-            reply_markup=markup
-        )
+        @self.bot.message_handler(func=lambda m: m.from_user and m.from_user.id in self.admin_reply_mode)
+        def send_reply_to_client(message):
+            admin_id = message.from_user.id
+            user_id = self.admin_reply_mode.get(admin_id)
 
-    except Exception as e:
-        logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
-        self.bot.send_message(admin_id, f"❌ Помилка при відправці: {e}")
+            # Без user_id нічого не робимо
+            if not user_id:
+                return
 
+            # Безпечна обробка тексту (message.text може бути None)
+            text = message.text or ""
 
+            # Якщо адмін відправляє команду /cancel
+            if text.strip() == '/cancel':
+                if admin_id in self.admin_reply_mode:
+                    del self.admin_reply_mode[admin_id]
+                    remove_markup = types.ReplyKeyboardRemove()
+                    self.bot.send_message(admin_id, "❌ Режим відповіді скасовано.", reply_markup=remove_markup)
+                return
 
+            # Якщо це команда (інша, ніж /cancel) або пусте повідомлення — ігноруємо
+            if not text or text.startswith('/'):
+                return
+
+            try:
+                # переконатись, що user_id має правильний тип при відправці (telebot приймає int або str)
+                # Відправляємо клієнту
+                self.bot.send_message(
+                    user_id,
+                    f"📨 *Від менеджера:*\n\n{text}",
+                    parse_mode='Markdown'
+                )
+
+                # Зберігаємо в історію (chat_manager очікує тип ключа, тому передаємо як було збережено)
+                try:
+                    chat_manager.add_message(user_id, text, from_admin=True)
+                except Exception:
+                    # Спроба з іншим типом ключа (рядок)
+                    try:
+                        chat_manager.add_message(str(user_id), text, from_admin=True)
+                    except Exception:
+                        logger.exception("Failed to add message to chat_manager for user %s", user_id)
+
+                # Підтвердження адміну
+                self.bot.send_message(admin_id, f"✅ Відповідь надіслана клієнту {user_id}")
+
+                # Прибираємо спеціальну клавіатуру
+                remove_markup = types.ReplyKeyboardRemove()
+                self.bot.send_message(admin_id, "✅ Режим відповіді завершено.", reply_markup=remove_markup)
+
+                # Виходимо з режиму відповіді
+                if admin_id in self.admin_reply_mode:
+                    del self.admin_reply_mode[admin_id]
+
+            except Exception as e:
+                logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
+                # Детальний текст помилки адміну (можливо приховати для продуктивного середовища)
+                self.bot.send_message(admin_id, f"❌ Помилка при відправці: {e}")
