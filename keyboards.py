@@ -21,8 +21,8 @@ def liquids_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
     liquids = [
         "Chaser 10 ml", "Chaser 30 ml for pods", 
-        "Chaser mix 30 ml", "Chaser black 30 ml",
-        "Chaser lux 30 ml", "Chaser black 30 ml 50 mg", 
+        "Chaser mix 30 ml 50/65 mg", "Chaser black 30 ml 50/65 mg",
+        "Chaser My Mint 50/65 mg" "Chaser lux 30 ml 50/65 mg ", 
         "Назад ◀️"
     ]
     for liquid in liquids:
@@ -71,3 +71,4 @@ def admin_main_menu():
         types.KeyboardButton("🔙 Головне меню")
     )
     return markup
+
