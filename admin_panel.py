@@ -1,7 +1,6 @@
 import time
 import logging
 from telebot import types
-from chat_manager import chat_manager
 from config import is_admin
 
 logger = logging.getLogger(__name__)
@@ -299,3 +298,4 @@ def send_reply_to_client(message):
     except Exception as e:
         logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
         self.bot.send_message(admin_id, f"❌ Помилка при відправці: {e}")
+
