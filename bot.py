@@ -27,10 +27,9 @@ try:
         main_menu, assortment_menu, liquids_menu, pods_menu,
         cartridges_menu, order_menu, info_menu, admin_main_menu
     )
-   from admin_panel import AdminPanel, set_chat_manager  # ДОДАТИ set_chat_manager
-set_chat_manager(chat_manager)  # Передаємо chat_manager в admin_panel
+    from config import ADMIN_IDS, is_admin
     from chat_manager import chat_manager
-    from admin_panel import AdminPanel
+    from admin_panel import AdminPanel, set_chat_manager  # ДОДАТИ set_chat_manager
 except ImportError as e:
     print(f"❌ Помилка імпорту: {e}")
     raise
@@ -505,6 +504,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
