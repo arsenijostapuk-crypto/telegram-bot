@@ -156,7 +156,53 @@ class AdminPanel:
                 ))
 
             self.bot.send_message(message.chat.id, "Оберіть клієнта для відповіді:", reply_markup=markup)
-
+        @self.bot.message_handler(func=lambda m: m.text == "🧹 Очистити статистику" and is_admin(m.from_user.id))
+        def clear_statistics(message):
+            if not is_admin(message.from_user.id):
+                return
+            
+            markup = types.InlineKeyboardMarkup()
+            markup.add(
+                types.InlineKeyboardButton("✅ Так, очистити", callback_data="clear_stats_confirm"),
+                types.InlineKeyboardButton("❌ Ні, скасувати", callback_data="clear_stats_cancel")
+            )
+            
+            self.bot.send_message(
+                message.chat.id,
+                "⚠️ *Очищення статистики*\n\n"
+                "Ця дія видалить всі дані про користувачів!\n"
+                "Підтверджуєте?",
+                parse_mode='Markdown',
+                reply_markup=markup
+            )
+        
+        @self.bot.callback_query_handler(func=lambda call: call.data.startswith('clear_stats_'))
+        def handle_clear_stats(call):
+            action = call.data.split('_')[2]
+            
+            if action == 'cancel':
+                self.bot.answer_callback_query(call.id, "❌ Скасовано")
+                self.bot.edit_message_text(
+                    "❌ Очищення статистики скасовано",
+                    call.message.chat.id,
+                    call.message.message_id
+                )
+                return
+            
+            # Очищення статистики
+            chat_manager.chats = {}
+            try:
+                chat_manager.save_chats()
+                self.bot.answer_callback_query(call.id, "✅ Статистику очищено")
+                self.bot.edit_message_text(
+                    "✅ *Статистику очищено!*\n\nВсі дані про користувачів видалено.",
+                    call.message.chat.id,
+                    call.message.message_id,
+                    parse_mode='Markdown'
+                )
+            except Exception as e:
+                logger.exception("Failed to clear statistics")
+                self.bot.answer_callback_query(call.id, "❌ Помилка")
         # ==================== CALLBACK-ОБРОБНИКИ ====================
         @self.bot.callback_query_handler(func=lambda call: call.data and call.data.startswith('reply_'))
         def start_reply(call):
@@ -315,4 +361,5 @@ class AdminPanel:
                 logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
                 # Детальний текст помилки адміну (можливо приховати для продуктивного середовища)
                 self.bot.send_message(admin_id, f"❌ Помилка при відправці: {e}")
+
 
