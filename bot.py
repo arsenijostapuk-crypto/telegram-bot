@@ -270,8 +270,6 @@ def handle_client_reply(message):
     except Exception as e:
         print(f"❌ Помилка при відправці відповіді клієнта: {e}")
         bot.send_message(user_id, "❌ Помилка відправки. Спробуйте ще раз.")
-
-
 # ==================== ЗАВЕРШЕННЯ СПІЛКУВАННЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Завершити спілкування ✅")
 def handle_end_conversation(message):
@@ -546,3 +544,4 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
