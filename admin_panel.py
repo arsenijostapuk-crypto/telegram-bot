@@ -246,7 +246,7 @@ class AdminPanel:
             else:
                 self.bot.send_message(message.chat.id, "ℹ️ Ви не в режимі відповіді.")
 
-        @self.bot.message_handler(func=lambda m: m.from_user and m.from_user.id in self.admin_reply_mode)
+                @self.bot.message_handler(func=lambda m: m.from_user and m.from_user.id in self.admin_reply_mode)
         def send_reply_to_client(message):
             admin_id = message.from_user.id
             user_id = self.admin_reply_mode.get(admin_id)
@@ -275,7 +275,7 @@ class AdminPanel:
                 # Відправляємо клієнту
                 self.bot.send_message(
                     user_id,
-                    f"📨 *Від менеджера:*\n\n{text}",
+                    f"📌 *Від менеджера:*\n\n{text}",
                     parse_mode='Markdown'
                 )
 
@@ -299,6 +299,19 @@ class AdminPanel:
                 # Виходимо з режиму відповіді
                 if admin_id in self.admin_reply_mode:
                     del self.admin_reply_mode[admin_id]
+                    
+                # ПОВІДОМЛЯЄМО КЛІЄНТА, ЩО ВІН МОЖЕ ВІДПОВІСТИ
+                from keyboards import main_menu
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                markup.add(types.KeyboardButton("Завершити спілкування ✅"))
+
+                self.bot.send_message(
+                    user_id,
+                    "📌 *Повідомлення*\n\n"
+                    "Надішліть своє повідомлення нижче або завершіть розмову",
+                    parse_mode='Markdown',
+                    reply_markup=markup
+                )
 
             except Exception as e:
                 logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
