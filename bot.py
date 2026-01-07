@@ -222,17 +222,24 @@ def handle_client_reply(message):
         )
         
         bot.send_message(ADMIN_GROUP_ID, admin_msg, parse_mode='Markdown', reply_markup=markup)
-        
-        # Підтвердження клієнту
+                # Підтвердження клієнту
         bot.send_message(
             user_id,
-            "✅ *Повідомлення відправлено менеджеру!*",
+            "✔ *Повідомлення відправлено менеджеру!*",
             parse_mode='Markdown'
         )
         
         # Показуємо, що можна продовжувати спілкування
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.add(types.KeyboardButton("Завершити спілкування ✅"))
+        
+        bot.send_message(
+            user_id,
+            "📌 *Повідомлення*\n\n"
+            "Надішліть своє повідомлення нижче або завершіть розмову",
+            parse_mode='Markdown',
+            reply_markup=markup
+        )
         
         bot.send_message(
             user_id,
@@ -508,6 +515,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
