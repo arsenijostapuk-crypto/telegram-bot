@@ -493,6 +493,54 @@ def debug_stats(message):
     report += f"🚫 Заблоковано: *{stats['blocked']}*"
     
     bot.send_message(message.chat.id, report, parse_mode='Markdown')
+    @bot.message_handler(func=lambda m: m.text == "🔄 Скинути статистику" and is_admin(m.from_user.id))
+def reset_stats(message):
+    if not is_admin(message.from_user.id):
+        return
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.add(
+        types.InlineKeyboardButton("✅ Так, скинути", callback_data="reset_stats_confirm"),
+        types.InlineKeyboardButton("❌ Ні, скасувати", callback_data="reset_stats_cancel")
+    )
+    
+    bot.send_message(
+        message.chat.id,
+        "⚠️ *Скидання статусів користувачів*\n\n"
+        "Усі користувачі будуть переведені в статус 'registered'.\n"
+        "Підтверджуєте?",
+        parse_mode='Markdown',
+        reply_markup=markup
+    )
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('reset_stats_'))
+def handle_reset_stats(call):
+    action = call.data.split('_')[2]
+    
+    if action == 'cancel':
+        bot.answer_callback_query(call.id, "❌ Скасовано")
+        bot.edit_message_text(
+            "❌ Скидання статусів скасовано",
+            call.message.chat.id,
+            call.message.message_id
+        )
+        return
+    
+    # Скидаємо всі статуси на "registered"
+    for user_id, chat in chat_manager.chats.items():
+        if chat.get('status') != 'unsubscribed':  # Не чіпаємо відписаних
+            chat['status'] = 'registered'
+    
+    chat_manager.save_chats()
+    
+    bot.answer_callback_query(call.id, "✅ Статуси скинуто")
+    bot.edit_message_text(
+        "✅ *Статуси користувачів скинуто!*\n\n"
+        "Всі користувачі (крім відписаних) тепер мають статус 'registered'.",
+        call.message.chat.id,
+        call.message.message_id,
+        parse_mode='Markdown'
+    )
 # ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
 @bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
@@ -573,5 +621,6 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
