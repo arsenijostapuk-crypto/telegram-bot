@@ -356,9 +356,9 @@ def process_order(message):
     chat_manager.start_chat(user.id, user.first_name, user.username)
     chat_manager.add_message(user.id, message.text, from_admin=False)
     
-    bot.send_message(
+       bot.send_message(
         message.chat.id,
-        f"✅ *Повідомлення відправлено!*\nМенеджер зв'яжеться за 5-15 хв.",
+        f"✔ *Повідомлення відправлено!*\nМенеджер зв'яжеться за 5-15 хв.",
         parse_mode='Markdown',
         reply_markup=main_menu()
     )
@@ -515,6 +515,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
