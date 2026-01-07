@@ -153,6 +153,8 @@ def handle_back(message):
     else:
         # Якщо немає активного чату, повертаємо до головного меню
         bot.send_message(message.chat.id, "🏠 Головне меню:", reply_markup=main_menu())
+
+
 # ==================== ОБРОБНИК "🔙 ГОЛОВНЕ МЕНЮ" ====================
 @bot.message_handler(func=lambda m: m.text == "🔙 Головне меню")
 def handle_admin_back(message):
@@ -181,6 +183,8 @@ def handle_broadcast(message):
                      "✍️ *Напишіть повідомлення для розсилки:*\n\n"
                      "⚠️ _Для скасування напишіть /cancel_",
                      parse_mode='Markdown')
+
+
 # ==================== ОБРОБКА ВІДПОВІДЕЙ КЛІЄНТА ====================
 @bot.message_handler(func=lambda m: str(m.from_user.id) in chat_manager.chats and 
                     chat_manager.chats[str(m.from_user.id)].get('status') == 'active' and
@@ -219,7 +223,8 @@ def handle_client_reply(message):
         )
         
         bot.send_message(ADMIN_GROUP_ID, admin_msg, parse_mode='Markdown', reply_markup=markup)
-                # Підтвердження клієнту
+        
+        # Підтвердження клієнту
         bot.send_message(
             user_id,
             "✔ *Повідомлення відправлено менеджеру!*",
@@ -238,18 +243,12 @@ def handle_client_reply(message):
             reply_markup=markup
         )
         
-        bot.send_message(
-            user_id,
-            "💬 *Ви можете продовжувати спілкування*\n\n"
-            "Напишіть ще повідомлення або натисніть 'Завершити спілкування ✅'",
-            parse_mode='Markdown',
-            reply_markup=markup
-        )
-        
     except Exception as e:
         print(f"❌ Помилка при відправці відповіді клієнта: {e}")
         bot.send_message(user_id, "❌ Помилка відправки. Спробуйте ще раз.")
-        # ==================== ЗАВЕРШЕННЯ СПІЛКУВАННЯ ====================
+
+
+# ==================== ЗАВЕРШЕННЯ СПІЛКУВАННЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Завершити спілкування ✅")
 def handle_end_conversation(message):
     """Клієнт завершує спілкування"""
@@ -280,6 +279,8 @@ def handle_end_conversation(message):
         parse_mode='Markdown',
         reply_markup=main_menu()
     )
+
+
 # ==================== ОБРОБНИК ТЕКСТУ РОЗСИЛКИ ====================
 @bot.message_handler(func=lambda m: is_admin(m.from_user.id) and broadcast_waiting.get(m.from_user.id, False))
 def handle_broadcast_text_input(message):
@@ -315,6 +316,7 @@ def handle_broadcast_text_input(message):
         bot.temp_broadcasts = {}
     bot.temp_broadcasts[admin_id] = broadcast_text
 
+
 # ==================== ІНФОРМАЦІЯ ====================
 @bot.message_handler(func=lambda m: m.text == "Як замовити?")
 def how_to_order(message):
@@ -343,6 +345,7 @@ def payment_delivery(message):
 """
     bot.send_message(message.chat.id, response, parse_mode='Markdown')
 
+
 # ==================== ЗАМОВЛЕННЯ ====================
 def process_order(message):
     if message.text == "Скасувати надсилання ❌":
@@ -353,7 +356,7 @@ def process_order(message):
     chat_manager.start_chat(user.id, user.first_name, user.username)
     chat_manager.add_message(user.id, message.text, from_admin=False)
     
-       bot.send_message(
+    bot.send_message(
         message.chat.id,
         f"✔ *Повідомлення відправлено!*\nМенеджер зв'яжеться за 5-15 хв.",
         parse_mode='Markdown',
@@ -368,6 +371,7 @@ def process_order(message):
         bot.send_message(ADMIN_GROUP_ID, admin_msg, reply_markup=markup)
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
+
 
 # ==================== CALLBACK ДЛЯ РОЗСИЛКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('broadcast_'))
@@ -434,11 +438,13 @@ def handle_broadcast_confirmation(call):
         # Видаляємо тимчасові дані
         del bot.temp_broadcasts[admin_id]
 
+
 # ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
 @bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
     if message.text:
         print(f"📥 Повідомлення: '{message.text}' від {message.from_user.id}")
+
 
 # ==================== ВЕБХУК МАРШРУТИ ====================
 @app.route('/')
@@ -505,6 +511,7 @@ def webhook():
         return ''
     return 'ERROR', 400
 
+
 # ==================== ЗАПУСК ====================
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
@@ -512,14 +519,3 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
-
-
-
-
-
-
-
-
-
-
-
