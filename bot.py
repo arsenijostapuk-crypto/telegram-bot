@@ -255,10 +255,9 @@ def handle_end_conversation(message):
     user_id = message.from_user.id
     user_chat = chat_manager.get_chat(user_id)
     
-    if user_chat:
-        user_chat['status'] = 'closed'
-        user_chat['unread'] = False
-        chat_manager.save_chats()
+       if user_chat:
+        # Використовуємо метод mark_as_closed
+        chat_manager.mark_as_closed(user_id)
     
     # Повідомляємо адмінів
     try:
@@ -519,3 +518,4 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
