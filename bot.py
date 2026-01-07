@@ -86,6 +86,25 @@ def send_welcome(message):
     bot.send_message(message.chat.id, WELCOME_TEXT, 
                     parse_mode='Markdown', reply_markup=main_menu())
 
+
+# ==================== ОБРОБНИК ВІДПИСКИ ====================
+@bot.message_handler(commands=['unsubscribe'])
+def handle_unsubscribe(message):
+    """Користувач відписується від бота"""
+    user_id = message.from_user.id
+    
+    # Позначаємо як відписаного
+    chat_manager.mark_as_unsubscribed(user_id)
+    
+    bot.send_message(
+        user_id,
+        "🔕 *Ви відписались від сповіщень*\n\n"
+        "Щоб знову підписатися, натисніть /start",
+        parse_mode='Markdown',
+        reply_markup=types.ReplyKeyboardRemove()
+    )
+
+
 @bot.message_handler(commands=['test', 'ping'])
 def test_command(message):
     bot.reply_to(message, "✅ Бот працює! Напишіть /start")
@@ -260,7 +279,7 @@ def handle_end_conversation(message):
     user_id = message.from_user.id
     user_chat = chat_manager.get_chat(user_id)
     
-       if user_chat:
+    if user_chat:
         # Використовуємо метод mark_as_closed
         chat_manager.mark_as_closed(user_id)
     
@@ -379,6 +398,8 @@ def process_order(message):
         bot.send_message(ADMIN_GROUP_ID, admin_msg, reply_markup=markup)
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
+
+
 # ==================== CALLBACK ДЛЯ РОЗСИЛКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('broadcast_'))
 def handle_broadcast_confirmation(call):
@@ -443,22 +464,8 @@ def handle_broadcast_confirmation(call):
         
         # Видаляємо тимчасові дані
         del bot.temp_broadcasts[admin_id]
-# ==================== ОБРОБНИК ВІДПИСКИ ====================
-@bot.message_handler(commands=['unsubscribe'])
-def handle_unsubscribe(message):
-    """Користувач відписується від бота"""
-    user_id = message.from_user.id
-    
-    # Позначаємо як відписаного
-    chat_manager.mark_as_unsubscribed(user_id)
-    
-    bot.send_message(
-        user_id,
-        "🔕 *Ви відписались від сповіщень*\n\n"
-        "Щоб знову підписатися, натисніть /start",
-        parse_mode='Markdown',
-        reply_markup=types.ReplyKeyboardRemove()
-    )
+
+
 # ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
 @bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
@@ -539,7 +546,3 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
-
-
-
-
