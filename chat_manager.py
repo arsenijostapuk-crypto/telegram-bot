@@ -17,36 +17,43 @@ class ChatManager:
         with open(self.filename, 'w', encoding='utf-8') as f:
             json.dump(self.chats, f, ensure_ascii=False, indent=2)
     
-    # ==================== ОСНОВНІ МЕТОДИ ====================
-    
     def get_chat(self, user_id):
         """Отримати чат за user_id"""
         return self.chats.get(str(user_id))
     
     def start_chat(self, user_id, user_name, username):
-        if str(user_id) not in self.chats:
-            self.chats[str(user_id)] = {
+        user_id_str = str(user_id)
+        
+        if user_id_str not in self.chats:
+            # Новий користувач - статус "registered"
+            self.chats[user_id_str] = {
                 "user_name": user_name,
                 "username": username or "немає",
                 "started": str(datetime.now()),
                 "last_active": str(datetime.now()),
                 "messages": [],
-                "status": "registered",
+                "status": "registered",  # Статус при першому старті
                 "unread": False
             }
         else:
-            self.chats[str(user_id)]["last_active"] = str(datetime.now())
-            self.chats[str(user_id)]["user_name"] = user_name
-            self.chats[str(user_id)]["username"] = username or "немає"
-            if self.chats[str(user_id)].get("status") == "unsubscribed":
-                self.chats[str(user_id)]["status"] = "registered"
+            # Оновлюємо існуючого користувача
+            self.chats[user_id_str]["last_active"] = str(datetime.now())
+            self.chats[user_id_str]["user_name"] = user_name
+            self.chats[user_id_str]["username"] = username or "немає"
+            
+            # Якщо статус "unsubscribed" - змінюємо на "registered"
+            if self.chats[user_id_str].get("status") == "unsubscribed":
+                self.chats[user_id_str]["status"] = "registered"
         
         self.save_chats()
-        return self.chats[str(user_id)]
+        return self.chats[user_id_str]
     
     def add_message(self, user_id, text, from_admin=False):
-        if str(user_id) not in self.chats:
-            return False
+        user_id_str = str(user_id)
+        
+        if user_id_str not in self.chats:
+            # Якщо чату немає, створюємо його
+            self.start_chat(user_id, "Unknown", "немає")
         
         message = {
             "text": text,
@@ -54,13 +61,29 @@ class ChatManager:
             "time": str(datetime.now())
         }
         
-        self.chats[str(user_id)]["messages"].append(message)
-        self.chats[str(user_id)]["unread"] = not from_admin
-        self.chats[str(user_id)]["status"] = "active"
+        self.chats[user_id_str]["messages"].append(message)
+        self.chats[user_id_str]["unread"] = not from_admin
+        
+        # Оновлюємо статус
+        if from_admin:
+            # Якщо повідомлення від адміна - чат активний
+            self.chats[user_id_str]["status"] = "active"
+        elif self.chats[user_id_str].get("status") == "registered":
+            # Якщо це перше повідомлення від користувача
+            self.chats[user_id_str]["status"] = "active"
+        
         self.save_chats()
         return True
     
-    # ==================== МЕТОДИ ПОШУКУ ====================
+    def update_status(self, user_id, status):
+        """Оновити статус чату"""
+        user_id_str = str(user_id)
+        
+        if user_id_str in self.chats:
+            self.chats[user_id_str]["status"] = status
+            self.save_chats()
+            return True
+        return False
     
     def get_active_chats(self):
         return {uid: chat for uid, chat in self.chats.items() 
@@ -100,6 +123,14 @@ class ChatManager:
                 stats['closed'] += 1
         
         return stats
+    
+    def mark_as_unsubscribed(self, user_id):
+        """Позначити користувача як відписаного"""
+        return self.update_status(user_id, "unsubscribed")
+    
+    def mark_as_closed(self, user_id):
+        """Позначити чат як завершений"""
+        return self.update_status(user_id, "closed")
 
 
 # Глобальний екземпляр
