@@ -21,7 +21,7 @@ class ChatManager:
         """Отримати чат за user_id"""
         return self.chats.get(str(user_id))
     
-        def start_chat(self, user_id, user_name, username):
+    def start_chat(self, user_id, user_name, username):
         user_id_str = str(user_id)
         
         if user_id_str not in self.chats:
@@ -50,6 +50,7 @@ class ChatManager:
         
         self.save_chats()
         return self.chats[user_id_str]
+    
     def add_message(self, user_id, text, from_admin=False):
         user_id_str = str(user_id)
         
@@ -113,7 +114,7 @@ class ChatManager:
         
         for chat in self.chats.values():
             status = chat.get('status', 'registered')
-            print(f"DEBUG: Статус чату: {status}")  # Додайте цей рядок для дебагу
+            print(f"DEBUG: Статус чату: {status}")
             
             if status == 'active':
                 stats['active'] += 1
@@ -126,10 +127,17 @@ class ChatManager:
             elif status == 'closed':
                 stats['closed'] += 1
         
-        print(f"DEBUG: Загальна статистика: {stats}")  # Додайте цей рядок для дебагу
+        print(f"DEBUG: Загальна статистика: {stats}")
         return stats
+    
+    def mark_as_unsubscribed(self, user_id):
+        """Позначити користувача як відписаного"""
+        return self.update_status(user_id, "unsubscribed")
+    
+    def mark_as_closed(self, user_id):
+        """Позначити чат як завершений"""
+        return self.update_status(user_id, "closed")
 
 
 # Глобальний екземпляр
 chat_manager = ChatManager()
-
