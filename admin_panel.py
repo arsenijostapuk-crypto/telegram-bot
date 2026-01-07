@@ -206,11 +206,9 @@ class AdminPanel:
                 self.bot.answer_callback_query(call.id, "Чат не знайдено")
                 return
 
-            # Змінюємо статус чату на "завершений"
-            chat['status'] = 'closed'
-            chat['unread'] = False
+            # Використовуємо метод mark_as_closed
             try:
-                chat_manager.save_chats()
+                chat_manager.mark_as_closed(user_id)
             except Exception:
                 logger.exception("Failed to save chats after closing chat %s", user_id)
 
@@ -317,3 +315,4 @@ class AdminPanel:
                 logger.exception("Error while admin %s trying to send message to user %s", admin_id, user_id)
                 # Детальний текст помилки адміну (можливо приховати для продуктивного середовища)
                 self.bot.send_message(admin_id, f"❌ Помилка при відправці: {e}")
+
