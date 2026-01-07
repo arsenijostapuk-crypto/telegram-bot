@@ -493,7 +493,7 @@ def handle_broadcast_confirmation(call):
     report += f"🚫 Заблоковано: *{stats['blocked']}*"
     
     bot.send_message(message.chat.id, report, parse_mode='Markdown')
-    @bot.message_handler(func=lambda m: m.text == "🔄 Скинути статистику" and is_admin(m.from_user.id))
+@bot.message_handler(func=lambda m: m.text == "🔄 Скинути статистику" and is_admin(m.from_user.id))
 def reset_stats(message):
     if not is_admin(message.from_user.id):
         return
@@ -621,6 +621,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
