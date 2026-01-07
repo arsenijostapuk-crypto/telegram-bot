@@ -67,10 +67,10 @@ def admin_main_menu():
         types.KeyboardButton("🆕 Нові повідомлення"),
         types.KeyboardButton("💬 Відповісти клієнту"),
         types.KeyboardButton("📢 Розсилка"),
-        types.KeyboardButton("📊 Статистика"),
         types.KeyboardButton("🔙 Головне меню")
     )
     return markup
+
 
 
 
