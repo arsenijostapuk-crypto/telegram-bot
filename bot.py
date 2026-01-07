@@ -78,6 +78,11 @@ ORDER_TEXT = """
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     print(f"🚀 /start від {message.from_user.id}")
+    
+    # Завжди починаємо чат при /start
+    user = message.from_user
+    chat_manager.start_chat(user.id, user.first_name, user.username)
+    
     bot.send_message(message.chat.id, WELCOME_TEXT, 
                     parse_mode='Markdown', reply_markup=main_menu())
 
@@ -532,5 +537,6 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
