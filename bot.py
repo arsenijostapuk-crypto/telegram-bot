@@ -463,8 +463,8 @@ def handle_broadcast_confirmation(call):
         # Видаляємо тимчасові дані
         del bot.temp_broadcasts[admin_id]
 
-@bot.message_handler(commands=['debug_stats'] and is_admin(m.from_user.id))
-def debug_stats(message):
+#@bot.message_handler(commands=['debug_stats'] and is_admin(m.from_user.id))
+#def debug_stats(message):
     """Дебаг статистики (тільки для адмінів)"""
     if not is_admin(message.from_user.id):
         return
@@ -621,6 +621,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
