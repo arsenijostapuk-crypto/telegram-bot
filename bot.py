@@ -20,7 +20,6 @@ user_reply_mode = {}
 # Змінна для відстеження очікування тексту розсилки
 broadcast_waiting = {}
 
-# Імпорти після ініціалізації бота
 try:
     from products import get_product_response
     from keyboards import (
@@ -513,6 +512,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
