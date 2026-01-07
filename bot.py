@@ -357,7 +357,11 @@ def process_order(message):
         return
     
     user = message.from_user
+    
+    # Починаємо чат (якщо ще не існує)
     chat_manager.start_chat(user.id, user.first_name, user.username)
+    
+    # Додаємо повідомлення - це змінить статус на "active"
     chat_manager.add_message(user.id, message.text, from_admin=False)
     
     bot.send_message(
@@ -375,8 +379,6 @@ def process_order(message):
         bot.send_message(ADMIN_GROUP_ID, admin_msg, reply_markup=markup)
     except Exception as e:
         print(f"❌ Помилка відправки в групу: {e}")
-
-
 # ==================== CALLBACK ДЛЯ РОЗСИЛКИ ====================
 @bot.callback_query_handler(func=lambda call: call.data.startswith('broadcast_'))
 def handle_broadcast_confirmation(call):
@@ -537,6 +539,7 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
 
 
