@@ -463,7 +463,36 @@ def handle_broadcast_confirmation(call):
         # Видаляємо тимчасові дані
         del bot.temp_broadcasts[admin_id]
 
-
+@bot.message_handler(commands=['debug_stats'] and is_admin(m.from_user.id))
+def debug_stats(message):
+    """Дебаг статистики (тільки для адмінів)"""
+    if not is_admin(message.from_user.id):
+        return
+    
+    # Отримуємо сирі дані
+    stats = chat_manager.get_user_stats()
+    chats_data = chat_manager.chats
+    
+    # Формуємо детальний звіт
+    report = "📊 *ДЕТАЛЬНА СТАТИСТИКА*\n\n"
+    
+    for user_id, chat in chats_data.items():
+        report += f"👤 *{chat.get('user_name', '—')}*\n"
+        report += f"🆔 ID: `{user_id}`\n"
+        report += f"📊 Статус: *{chat.get('status', 'немає')}*\n"
+        report += f"💬 Повідомлень: {len(chat.get('messages', []))}\n"
+        report += f"⏰ Створено: {chat.get('started', 'немає')[:16]}\n"
+        report += "⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+    
+    report += f"\n📈 *ЗАГАЛЬНА СТАТИСТИКА:*\n"
+    report += f"👥 Користувачів всього: *{stats['total']}*\n"
+    report += f"📝 Зареєстровано: *{stats['registered']}*\n"
+    report += f"💬 Активних чатів: *{stats['active']}*\n"
+    report += f"✅ Завершено: *{stats['closed']}*\n"
+    report += f"🔕 Відписались: *{stats['unsubscribed']}*\n"
+    report += f"🚫 Заблоковано: *{stats['blocked']}*"
+    
+    bot.send_message(message.chat.id, report, parse_mode='Markdown')
 # ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
 @bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
@@ -544,4 +573,5 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
