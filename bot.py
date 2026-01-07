@@ -436,8 +436,22 @@ def handle_broadcast_confirmation(call):
         
         # Видаляємо тимчасові дані
         del bot.temp_broadcasts[admin_id]
-
-
+# ==================== ОБРОБНИК ВІДПИСКИ ====================
+@bot.message_handler(commands=['unsubscribe'])
+def handle_unsubscribe(message):
+    """Користувач відписується від бота"""
+    user_id = message.from_user.id
+    
+    # Позначаємо як відписаного
+    chat_manager.mark_as_unsubscribed(user_id)
+    
+    bot.send_message(
+        user_id,
+        "🔕 *Ви відписались від сповіщень*\n\n"
+        "Щоб знову підписатися, натисніть /start",
+        parse_mode='Markdown',
+        reply_markup=types.ReplyKeyboardRemove()
+    )
 # ==================== ДЕБАГ ВСІХ ПОВІДОМЛЕНЬ (МАЄ БУТИ ОСТАННІМ!) ====================
 @bot.message_handler(func=lambda m: True)
 def debug_all_messages(message):
@@ -518,4 +532,5 @@ if __name__ == '__main__':
     print(f"🌐 URL: https://telegram-bot-iss2.onrender.com")
     print(f"🔧 Тестуйте: /start → Натисніть 'Назад ◀️'")
     app.run(host='0.0.0.0', port=port)
+
 
